@@ -1,4 +1,8 @@
 <script lang="ts">
+	import areMovesLeft from '../utils/areMovesLeft';
+	import evaluate from '../utils/evaluate';
+	import { isAIWin, isPlayerWin, isDraw } from '../utils/isDraw';
+
 	import findBestMove from '../utils/findBestMove';
 
 	let board = [
@@ -33,8 +37,23 @@
 						id={'col' + (i * 3 + j).toString()}
 						on:click={() => {
 							board[i][j] = opponent;
+							let evaluateRes = evaluate(board);
+
+							if (isPlayerWin(evaluateRes)) {
+								console.log('player won, that is unexpected');
+							} else if (isDraw(evaluateRes, board)) {
+								console.log('draw');
+							}
+
 							let bestMove = findBestMove(board, player, opponent);
 							board[bestMove.row][bestMove.col] = '+';
+							evaluateRes = evaluate(board);
+
+							if (isAIWin(evaluateRes)) {
+								console.log('AI won, that is expected');
+							} else if (isDraw(evaluateRes, board)) {
+								console.log('draw');
+							}
 						}}
 					/>
 				{/if}

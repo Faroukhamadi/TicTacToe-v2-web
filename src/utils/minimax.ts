@@ -1,8 +1,6 @@
 import areMovesLeft from './areMovesLeft';
 import evaluate from './evaluate';
 
-let player = '+';
-let opponent = 'o';
 const minimax = (
 	board: string[][],
 	depth: number,

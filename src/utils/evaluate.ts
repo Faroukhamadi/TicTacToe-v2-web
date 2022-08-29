@@ -1,6 +1,4 @@
-let player = '+';
-let opponent = 'o';
-const evaluate = (board: string[][]): number => {
+const evaluate = (board: string[][], player: string, opponent: string): number => {
 	for (let row = 0; row < 3; row++) {
 		if (board[row][0] == board[row][1] && board[row][1] == board[row][2]) {
 			if (board[row][0] == player) {

@@ -1,19 +1,20 @@
 <script lang="ts">
-	import areMovesLeft from '../utils/areMovesLeft';
 	import evaluate from '../utils/evaluate';
-	import { isAIWin, isPlayerWin, isDraw } from '../utils/isDraw';
-
+	import { isAIWin, isPlayerWin, isDraw } from '../utils/gameResult';
 	import findBestMove from '../utils/findBestMove';
+	import initBoard from '../utils/initBoard';
+	import restart from '../utils/restart';
+	import { disabled } from '../stores';
 
-	let board = [
-		['_', '_', '_'],
-		['_', '_', '_'],
-		['_', '_', '_']
-	];
-	let player = '+';
-	let opponent = 'o';
-	let bestMove = findBestMove(board, player, opponent);
-	board[bestMove.row][bestMove.col] = '+';
+	let board = initBoard();
+
+	let player = 'o';
+	let opponent = '+';
+	let AITurn = true;
+	if (AITurn) {
+		let bestMove = findBestMove(board, player, opponent);
+		board[bestMove.row][bestMove.col] = player;
+	}
 </script>
 
 <svelte:head>
@@ -24,7 +25,42 @@
 </svelte:head>
 
 <div class="container">
-	<div class="game-brd">
+	<div
+		class="game-brd"
+		on:click={() => {
+			setTimeout(() => {
+				disabled.set(false);
+			}, 3000);
+			let evaluateRes = evaluate(board, player, opponent);
+
+			if (
+				(isPlayerWin(evaluateRes) || isAIWin(evaluateRes) || isDraw(evaluateRes, board)) &&
+				!$disabled
+			) {
+				console.log('why am I even in here ?');
+				let restartRes = restart(AITurn);
+				if (isPlayerWin(evaluateRes)) {
+					console.log('player won, that is unexpected');
+					board = restartRes.board;
+					AITurn = restartRes.AITurn;
+				} else if (isDraw(evaluateRes, board)) {
+					console.log('draw');
+					board = restartRes.board;
+					AITurn = restartRes.AITurn;
+				}
+				evaluateRes = evaluate(board, player, opponent);
+				if (isAIWin(evaluateRes)) {
+					console.log('AI won, that is expected');
+					board = restartRes.board;
+					AITurn = restartRes.AITurn;
+				} else if (isDraw(evaluateRes, board)) {
+					board = restartRes.board;
+					AITurn = restartRes.AITurn;
+					console.log('draw');
+				}
+			}
+		}}
+	>
 		{#each board as col, i}
 			{#each col as box, j}
 				{#if box === '+'}
@@ -36,23 +72,16 @@
 						class="col"
 						id={'col' + (i * 3 + j).toString()}
 						on:click={() => {
-							board[i][j] = opponent;
-							let evaluateRes = evaluate(board);
-
-							if (isPlayerWin(evaluateRes)) {
-								console.log('player won, that is unexpected');
-							} else if (isDraw(evaluateRes, board)) {
-								console.log('draw');
-							}
-
-							let bestMove = findBestMove(board, player, opponent);
-							board[bestMove.row][bestMove.col] = '+';
-							evaluateRes = evaluate(board);
-
-							if (isAIWin(evaluateRes)) {
-								console.log('AI won, that is expected');
-							} else if (isDraw(evaluateRes, board)) {
-								console.log('draw');
+							let evaluateRes = evaluate(board, player, opponent);
+							if (
+								!isPlayerWin(evaluateRes) &&
+								!isAIWin(evaluateRes) &&
+								!isDraw(evaluateRes, board)
+							) {
+								board[i][j] = opponent;
+								let bestMove = findBestMove(board, player, opponent);
+								board[bestMove.row][bestMove.col] = player;
+								disabled.set(true);
 							}
 						}}
 					/>

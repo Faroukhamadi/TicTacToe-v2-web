@@ -8,7 +8,7 @@ const minimax = (
 	player: string,
 	opponent: string
 ): number => {
-	let score = evaluate(board);
+	let score = evaluate(board, player, opponent);
 
 	if (score !== 0) {
 		return score;

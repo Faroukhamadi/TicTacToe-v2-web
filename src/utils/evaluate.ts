@@ -1,4 +1,4 @@
-let player = 'x';
+let player = '+';
 let opponent = 'o';
 const evaluate = (board: string[][]): number => {
 	for (let row = 0; row < 3; row++) {

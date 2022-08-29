@@ -1,18 +1,14 @@
 import minimax from './minimax';
-
-let player = 'x';
-let opponent = 'o';
-
 class Move {
+	row: number;
+	col: number;
 	constructor(row: number, col: number) {
-		// @ts-ignore
 		this.row = row;
-		// @ts-ignore
 		this.col = row;
 	}
 }
 
-const findBestMove = (board: string[][]): Move => {
+const findBestMove = (board: string[][], player: string, opponent: string): Move => {
 	let bestVal = Number.MIN_SAFE_INTEGER;
 	let bestMove = new Move(-1, -1);
 
@@ -20,10 +16,8 @@ const findBestMove = (board: string[][]): Move => {
 		for (let j = 0; j < 3; j++) {
 			if (board[i][j] === '_') {
 				board[i][j] = player;
-				let moveVal = minimax(board, 0, false);
+				let moveVal = minimax(board, 0, false, player, opponent);
 				board[i][j] = '_';
-				console.log('moveVal: ', moveVal);
-				console.log('i:', i, 'j:', j);
 
 				if (moveVal > bestVal) {
 					bestMove.row = i;

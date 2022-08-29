@@ -1,9 +1,15 @@
 import areMovesLeft from './areMovesLeft';
 import evaluate from './evaluate';
 
-let player = 'x';
+let player = '+';
 let opponent = 'o';
-const minimax = (board: string[][], depth: number, isMax: boolean): number => {
+const minimax = (
+	board: string[][],
+	depth: number,
+	isMax: boolean,
+	player: string,
+	opponent: string
+): number => {
 	let score = evaluate(board);
 
 	if (score !== 0) {
@@ -22,7 +28,7 @@ const minimax = (board: string[][], depth: number, isMax: boolean): number => {
 				if (board[i][j] === '_') {
 					board[i][j] = player;
 
-					best = Math.max(best, minimax(board, depth + 1, !isMax));
+					best = Math.max(best, minimax(board, depth + 1, !isMax, player, opponent));
 
 					board[i][j] = '_';
 				}
@@ -37,7 +43,7 @@ const minimax = (board: string[][], depth: number, isMax: boolean): number => {
 				if (board[i][j] === '_') {
 					board[i][j] = opponent;
 
-					best = Math.min(best, minimax(board, depth + 1, !isMax));
+					best = Math.min(best, minimax(board, depth + 1, !isMax, player, opponent));
 
 					board[i][j] = '_';
 				}

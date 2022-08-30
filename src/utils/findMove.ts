@@ -1,4 +1,5 @@
 import minimax from './minimax';
+
 class Move {
 	row: number;
 	col: number;
@@ -8,7 +9,7 @@ class Move {
 	}
 }
 
-const findBestMove = (board: string[][], player: string, opponent: string): Move => {
+export const findBestMove = (board: string[][], player: string, opponent: string): Move => {
 	let bestVal = Number.MIN_SAFE_INTEGER;
 	let bestMove = new Move(-1, -1);
 
@@ -30,4 +31,17 @@ const findBestMove = (board: string[][], player: string, opponent: string): Move
 	return bestMove;
 };
 
-export default findBestMove;
+export const findRandomMove = (board: string[][]): Move => {
+	let randomRow = Math.floor(Math.random() * 3);
+	let randomCol = Math.floor(Math.random() * 3);
+	let randomMove = new Move(-1, -1);
+	while (board[randomRow][randomCol] !== '_') {
+		console.log('I GUESS');
+
+		randomRow = Math.floor(Math.random() * 3);
+		randomCol = Math.floor(Math.random() * 3);
+	}
+	randomMove.row = randomRow;
+	randomMove.col = randomCol;
+	return randomMove;
+};

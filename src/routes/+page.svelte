@@ -1,7 +1,7 @@
 <script lang="ts">
+	import { findRandomMove } from '../utils/findMove';
+	import { isAIWin, isDraw, isPlayerWin } from '../utils/gameResult';
 	import evaluate from '../utils/evaluate';
-	import { isAIWin, isPlayerWin, isDraw } from '../utils/gameResult';
-	import findBestMove from '../utils/findBestMove';
 	import initBoard from '../utils/initBoard';
 	import restart from '../utils/restart';
 
@@ -16,7 +16,7 @@
 
 	let AITurn = true;
 	if (AITurn) {
-		let bestMove = findBestMove(board, player, opponent);
+		let bestMove = findRandomMove(board);
 		board[bestMove.row][bestMove.col] = player;
 	}
 </script>
@@ -48,7 +48,7 @@
 								!isDraw(evaluateRes, board)
 							) {
 								board[i][j] = opponent;
-								let bestMove = findBestMove(board, player, opponent);
+								let bestMove = findRandomMove(board);
 								board[bestMove.row][bestMove.col] = player;
 							}
 						}}
@@ -94,9 +94,46 @@
 			id="rs">RESTART</button
 		>
 	</div>
+	<footer>
+		<a href="https://github.com/Faroukhamadi" target="_blank">
+			<img src="GitHub-Mark-Light-32px.png" alt="Github Logo" /></a
+		>
+		<p>
+			Created by <a href="https://github.com/Faroukhamadi" target="_blank">Farouk Hamadi</a> with Love,
+			Affection and Care.
+		</p>
+	</footer>
 </div>
 
 <style>
+	footer {
+		width: 100%;
+		height: 10vh;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+	}
+
+	footer > p > a {
+		color: white;
+	}
+
+	footer > a {
+		opacity: 0.6;
+		transition: 300ms opacity ease-in-out;
+	}
+
+	footer > a:hover {
+		opacity: 1;
+	}
+
+	footer > p {
+		margin-left: 1%;
+		font-size: medium;
+		font-family: 'sans-serif';
+		color: white;
+	}
+
 	.score-container {
 		font-family: sans-serif;
 		font-size: xx-large;
@@ -107,7 +144,7 @@
 
 	.score-container > p {
 		margin-top: 0.5em;
-		margin-bottom: 0.5em;
+		margin-bottom: 0.2em;
 	}
 
 	.footer-container {
@@ -148,6 +185,7 @@
 	.button-container {
 		display: flex;
 		gap: 20px;
+		margin-top: 30px;
 	}
 
 	.score-container {

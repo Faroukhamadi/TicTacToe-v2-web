@@ -4,12 +4,16 @@
 	import findBestMove from '../utils/findBestMove';
 	import initBoard from '../utils/initBoard';
 	import restart from '../utils/restart';
-	import { disabled, registerClick } from '../stores';
 
 	let board = initBoard();
 
 	let player = 'o';
 	let opponent = '+';
+
+	let playerScore = 0;
+	let AIScore = 0;
+	let drawCount = 0;
+
 	let AITurn = true;
 	if (AITurn) {
 		let bestMove = findBestMove(board, player, opponent);
@@ -25,38 +29,7 @@
 </svelte:head>
 
 <div class="container">
-	<div
-		class="game-brd"
-		on:click={() => {
-			setTimeout(() => {
-				disabled.set(false);
-			}, 3000);
-			let evaluateRes = evaluate(board, player, opponent);
-			if (
-				(isPlayerWin(evaluateRes) || isAIWin(evaluateRes) || isDraw(evaluateRes, board)) &&
-				!$disabled
-			) {
-				console.log('we in this bitch');
-
-				let restartRes = restart(AITurn);
-				if (isPlayerWin(evaluateRes)) {
-					board = restartRes.board;
-					AITurn = restartRes.AITurn;
-				} else if (isDraw(evaluateRes, board)) {
-					board = restartRes.board;
-					AITurn = restartRes.AITurn;
-				}
-				evaluateRes = evaluate(board, player, opponent);
-				if (isAIWin(evaluateRes)) {
-					board = restartRes.board;
-					AITurn = restartRes.AITurn;
-				} else if (isDraw(evaluateRes, board)) {
-					board = restartRes.board;
-					AITurn = restartRes.AITurn;
-				}
-			}
-		}}
-	>
+	<div class="game-brd">
 		{#each board as col, i}
 			{#each col as box, j}
 				{#if box === '+'}
@@ -77,14 +50,6 @@
 								board[i][j] = opponent;
 								let bestMove = findBestMove(board, player, opponent);
 								board[bestMove.row][bestMove.col] = player;
-								disabled.set(true);
-							}
-							if (isPlayerWin(evaluateRes) || isAIWin(evaluateRes) || isDraw(evaluateRes, board)) {
-								console.log('trueeeeeeeeeee');
-								console.log(isPlayerWin(evaluateRes));
-								console.log(isAIWin(evaluateRes));
-								console.log(isDraw(evaluateRes, board));
-								registerClick.set(true);
 							}
 						}}
 					/>
@@ -95,21 +60,39 @@
 	<div class="footer-container">
 		<div class="score-container">
 			<p>PLAYER1(X)</p>
-			<p>0</p>
+			<p>{playerScore}</p>
 		</div>
 		<div class="score-container">
 			<p>TIE</p>
-			<p>0</p>
+			<p>{drawCount}</p>
 		</div>
 		<div class="score-container">
 			<p>AI(O)</p>
-			<p>0</p>
+			<p>{AIScore}</p>
 		</div>
 	</div>
 
 	<div class="button-container">
 		<button id="ez">EASY</button>
 		<button id="hrd">HARD</button>
+		<button
+			on:click={() => {
+				let evaluateRes = evaluate(board, player, opponent);
+
+				if (isPlayerWin(evaluateRes)) {
+					playerScore++;
+				} else if (isDraw(evaluateRes, board)) {
+					drawCount++;
+				} else if (isAIWin(evaluateRes)) {
+					AIScore++;
+				}
+
+				let restartRes = restart(AITurn);
+				board = restartRes.board;
+				AITurn = restartRes.AITurn;
+			}}
+			id="rs">RESTART</button
+		>
 	</div>
 </div>
 
@@ -117,6 +100,14 @@
 	.score-container {
 		font-family: sans-serif;
 		font-size: xx-large;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+	}
+
+	.score-container > p {
+		margin-top: 0.5em;
+		margin-bottom: 0.5em;
 	}
 
 	.footer-container {
@@ -150,6 +141,10 @@
 		border-color: red;
 	}
 
+	#rs:hover {
+		border-color: black;
+	}
+
 	.button-container {
 		display: flex;
 		gap: 20px;
@@ -170,12 +165,12 @@
 	}
 
 	.container {
-		height: 98vh;
 		display: flex;
 		flex-direction: column;
 		justify-content: center;
 		align-items: center;
-		gap: 80px;
+		gap: 14px;
+		margin: 0;
 	}
 
 	.game-brd {
@@ -189,14 +184,14 @@
 		cursor: pointer;
 		background-color: black;
 		border: 4px solid white;
-		width: 250px;
-		height: 200px;
+		width: 200px;
+		height: 150px;
 		text-align: center;
 		display: flex;
 		justify-content: center;
 		align-items: center;
 		color: white;
-		font-size: 200px;
+		font-size: 150px;
 	}
 
 	#col0,

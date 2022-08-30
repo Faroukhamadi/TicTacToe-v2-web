@@ -4,7 +4,7 @@
 	import findBestMove from '../utils/findBestMove';
 	import initBoard from '../utils/initBoard';
 	import restart from '../utils/restart';
-	import { disabled } from '../stores';
+	import { disabled, registerClick } from '../stores';
 
 	let board = initBoard();
 
@@ -32,31 +32,27 @@
 				disabled.set(false);
 			}, 3000);
 			let evaluateRes = evaluate(board, player, opponent);
-
 			if (
 				(isPlayerWin(evaluateRes) || isAIWin(evaluateRes) || isDraw(evaluateRes, board)) &&
 				!$disabled
 			) {
-				console.log('why am I even in here ?');
+				console.log('we in this bitch');
+
 				let restartRes = restart(AITurn);
 				if (isPlayerWin(evaluateRes)) {
-					console.log('player won, that is unexpected');
 					board = restartRes.board;
 					AITurn = restartRes.AITurn;
 				} else if (isDraw(evaluateRes, board)) {
-					console.log('draw');
 					board = restartRes.board;
 					AITurn = restartRes.AITurn;
 				}
 				evaluateRes = evaluate(board, player, opponent);
 				if (isAIWin(evaluateRes)) {
-					console.log('AI won, that is expected');
 					board = restartRes.board;
 					AITurn = restartRes.AITurn;
 				} else if (isDraw(evaluateRes, board)) {
 					board = restartRes.board;
 					AITurn = restartRes.AITurn;
-					console.log('draw');
 				}
 			}
 		}}
@@ -83,18 +79,90 @@
 								board[bestMove.row][bestMove.col] = player;
 								disabled.set(true);
 							}
+							if (isPlayerWin(evaluateRes) || isAIWin(evaluateRes) || isDraw(evaluateRes, board)) {
+								console.log('trueeeeeeeeeee');
+								console.log(isPlayerWin(evaluateRes));
+								console.log(isAIWin(evaluateRes));
+								console.log(isDraw(evaluateRes, board));
+								registerClick.set(true);
+							}
 						}}
 					/>
 				{/if}
 			{/each}
 		{/each}
 	</div>
+	<div class="footer-container">
+		<div class="score-container">
+			<p>PLAYER1(X)</p>
+			<p>0</p>
+		</div>
+		<div class="score-container">
+			<p>TIE</p>
+			<p>0</p>
+		</div>
+		<div class="score-container">
+			<p>AI(O)</p>
+			<p>0</p>
+		</div>
+	</div>
+
+	<div class="button-container">
+		<button id="ez">EASY</button>
+		<button id="hrd">HARD</button>
+	</div>
 </div>
 
 <style>
+	.score-container {
+		font-family: sans-serif;
+		font-size: xx-large;
+	}
+
+	.footer-container {
+		display: flex;
+		gap: 150px;
+	}
+
+	button {
+		color: white;
+		background: black;
+		font-size: xx-large;
+		width: 300px;
+		height: 100px;
+		border-radius: 15px;
+		border: 5px solid white;
+		cursor: pointer;
+		transition: 300ms background-color ease-in-out, 300ms color ease-in-out,
+			300ms border-color ease-in-out;
+	}
+
+	button:hover {
+		background-color: white;
+		color: black;
+	}
+
+	#ez:hover {
+		border-color: green;
+	}
+
+	#hrd:hover {
+		border-color: red;
+	}
+
+	.button-container {
+		display: flex;
+		gap: 20px;
+	}
+
+	.score-container {
+		color: white;
+	}
+
 	:global(body) {
-		height: 100vh;
-		width: 100%;
+		background: black;
+		height: 98vh;
+		width: 99%;
 	}
 
 	.x {
@@ -102,10 +170,12 @@
 	}
 
 	.container {
-		height: 100vh;
+		height: 98vh;
 		display: flex;
+		flex-direction: column;
 		justify-content: center;
 		align-items: center;
+		gap: 80px;
 	}
 
 	.game-brd {
@@ -117,14 +187,15 @@
 
 	.col {
 		cursor: pointer;
-		background-color: white;
-		border: 4px solid black;
+		background-color: black;
+		border: 4px solid white;
 		width: 250px;
 		height: 200px;
 		text-align: center;
 		display: flex;
 		justify-content: center;
 		align-items: center;
+		color: white;
 		font-size: 200px;
 	}
 

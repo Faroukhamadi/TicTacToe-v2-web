@@ -1,6 +1,6 @@
 import minimax from './minimax';
 
-class Move {
+export class Move {
 	row: number;
 	col: number;
 	constructor(row: number, col: number) {
@@ -37,7 +37,6 @@ export const findRandomMove = (board: string[][]): Move => {
 	let randomMove = new Move(-1, -1);
 	while (board[randomRow][randomCol] !== '_') {
 		console.log('I GUESS');
-
 		randomRow = Math.floor(Math.random() * 3);
 		randomCol = Math.floor(Math.random() * 3);
 	}

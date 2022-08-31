@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { findRandomMove } from '../utils/findMove';
+	import { findBestMove, findRandomMove, Move } from '../utils/findMove';
 	import { isAIWin, isDraw, isPlayerWin } from '../utils/gameResult';
 	import evaluate from '../utils/evaluate';
 	import initBoard from '../utils/initBoard';
@@ -13,11 +13,19 @@
 	let playerScore = 0;
 	let AIScore = 0;
 	let drawCount = 0;
+	let difficulty = 'easy';
 
+	$: console.log('difficulty is: ', difficulty);
 	let AITurn = true;
 	if (AITurn) {
-		let bestMove = findRandomMove(board);
-		board[bestMove.row][bestMove.col] = player;
+		let bestMove: Move;
+		if (difficulty === 'hard') {
+			bestMove = findBestMove(board, player, opponent);
+			board[bestMove.row][bestMove.col] = player;
+		} else if (difficulty === 'easy') {
+			bestMove = findRandomMove(board);
+			board[bestMove.row][bestMove.col] = player;
+		}
 	}
 </script>
 
@@ -48,8 +56,14 @@
 								!isDraw(evaluateRes, board)
 							) {
 								board[i][j] = opponent;
-								let bestMove = findRandomMove(board);
-								board[bestMove.row][bestMove.col] = player;
+								let bestMove;
+								if (difficulty === 'hard') {
+									bestMove = findBestMove(board, player, opponent);
+									board[bestMove.row][bestMove.col] = player;
+								} else if (difficulty === 'easy') {
+									bestMove = findRandomMove(board);
+									board[bestMove.row][bestMove.col] = player;
+								}
 							}
 						}}
 					/>
@@ -67,14 +81,14 @@
 			<p>{drawCount}</p>
 		</div>
 		<div class="score-container">
-			<p>AI(O)</p>
+			<p>{difficulty === 'easy' ? 'EASY ' : 'UNBEATABLE '}AI(O)</p>
 			<p>{AIScore}</p>
 		</div>
 	</div>
 
 	<div class="button-container">
-		<button id="ez">EASY</button>
-		<button id="hrd">HARD</button>
+		<button on:click={() => (difficulty = 'easy')} id="ez">EASY</button>
+		<button on:click={() => (difficulty = 'hard')} id="hrd">HARD</button>
 		<button
 			on:click={() => {
 				let evaluateRes = evaluate(board, player, opponent);

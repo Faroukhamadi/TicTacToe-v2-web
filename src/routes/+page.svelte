@@ -1,9 +1,52 @@
 <script lang="ts">
-	import { findBestMove, findRandomMove, Move } from '../utils/findMove';
-	import { isAIWin, isDraw, isPlayerWin } from '../utils/gameResult';
-	import evaluate from '../utils/evaluate';
-	import initBoard from '../utils/initBoard';
-	import restart from '../utils/restart';
+	import { findBestMove, findRandomMove, Move } from '../lib/utils/findMove';
+	import { isAIWin, isDraw, isPlayerWin } from '../lib/utils/gameResult';
+	import evaluate from '../lib/utils/evaluate';
+	import initBoard from '../lib/utils/initBoard';
+	import restart from '../lib/utils/restart';
+	import Footer from '../lib/components/Footer.svelte';
+	import Difficulty from '../lib/components/Difficulty.svelte';
+	import convertIndexCol from '../lib/utils/convertIndex';
+	import { onMount } from 'svelte';
+	import { initializeApp, getApps, getApp } from 'firebase/app';
+	import { ref } from 'firebase/database';
+	import { set, type DatabaseReference } from 'firebase/database';
+	import { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
+	import type { FirebaseApp } from 'firebase/app';
+	import { auth, db } from '../lib/firebase/index';
+	import { name } from '../stores';
+
+	let playerId: string;
+	let playerRef: DatabaseReference;
+
+	onMount(() => {
+		async function fetch() {
+			await signInAnonymously(auth);
+		}
+
+		onAuthStateChanged(auth, (user) => {
+			console.log('user: ', user);
+			if (user) {
+				playerId = user.uid;
+				playerRef = ref(db, `players/${playerId}`);
+				console.log('this is playedId: ', playerId);
+				console.log('this is playedRef: ', playerRef);
+				set(playerRef, {
+					id: playerId,
+					name: $name,
+					direction: 'right',
+					color: 'red'
+				});
+				// You're logged in
+			} else {
+				// You're logged out
+			}
+		});
+
+		fetch();
+
+		return () => console.log('destroyed');
+	});
 
 	let board = initBoard();
 
@@ -15,7 +58,6 @@
 	let drawCount = 0;
 	let difficulty = 'easy';
 
-	$: console.log('difficulty is: ', difficulty);
 	let AITurn = true;
 	if (AITurn) {
 		let bestMove: Move;
@@ -41,13 +83,13 @@
 		{#each board as col, i}
 			{#each col as box, j}
 				{#if box === '+'}
-					<div class="col" id={'col' + (i * 3 + j).toString()}><p class="x">{box}</p></div>
+					<div class="col" id={convertIndexCol(i, j)}><p class="x">{box}</p></div>
 				{:else if box === 'o'}
-					<div class="col" id={'col' + (i * 3 + j).toString()}><p>{box}</p></div>
+					<div class="col" id={convertIndexCol(i, j)}><p>{box}</p></div>
 				{:else}
 					<div
 						class="col"
-						id={'col' + (i * 3 + j).toString()}
+						id={convertIndexCol(i, j)}
 						on:click={() => {
 							let evaluateRes = evaluate(board, player, opponent);
 							if (
@@ -60,7 +102,12 @@
 								if (difficulty === 'hard') {
 									bestMove = findBestMove(board, player, opponent);
 									board[bestMove.row][bestMove.col] = player;
-								} else if (difficulty === 'easy') {
+								} else if (
+									difficulty === 'easy' &&
+									!isPlayerWin(evaluateRes) &&
+									!isAIWin(evaluateRes) &&
+									!isDraw(evaluateRes, board)
+								) {
 									bestMove = findRandomMove(board);
 									board[bestMove.row][bestMove.col] = player;
 								}
@@ -71,21 +118,7 @@
 			{/each}
 		{/each}
 	</div>
-	<div class="footer-container">
-		<div class="score-container">
-			<p>PLAYER1(X)</p>
-			<p>{playerScore}</p>
-		</div>
-		<div class="score-container">
-			<p>TIE</p>
-			<p>{drawCount}</p>
-		</div>
-		<div class="score-container">
-			<p>{difficulty === 'easy' ? 'EASY ' : 'UNBEATABLE '}AI(O)</p>
-			<p>{AIScore}</p>
-		</div>
-	</div>
-
+	<Difficulty {playerScore} {AIScore} {drawCount} {difficulty} />
 	<div class="button-container">
 		<button on:click={() => (difficulty = 'easy')} id="ez">EASY</button>
 		<button on:click={() => (difficulty = 'hard')} id="hrd">HARD</button>
@@ -108,64 +141,10 @@
 			id="rs">RESTART</button
 		>
 	</div>
-	<footer>
-		<a href="https://github.com/Faroukhamadi" target="_blank">
-			<img src="GitHub-Mark-Light-32px.png" alt="Github Logo" /></a
-		>
-		<p>
-			Created by <a href="https://github.com/Faroukhamadi" target="_blank">Farouk Hamadi</a> with Love,
-			Affection and Care.
-		</p>
-	</footer>
+	<Footer />
 </div>
 
 <style>
-	footer {
-		width: 100%;
-		height: 10vh;
-		display: flex;
-		justify-content: center;
-		align-items: center;
-	}
-
-	footer > p > a {
-		color: white;
-	}
-
-	footer > a {
-		opacity: 0.6;
-		transition: 300ms opacity ease-in-out;
-	}
-
-	footer > a:hover {
-		opacity: 1;
-	}
-
-	footer > p {
-		margin-left: 1%;
-		font-size: medium;
-		font-family: 'sans-serif';
-		color: white;
-	}
-
-	.score-container {
-		font-family: sans-serif;
-		font-size: xx-large;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-	}
-
-	.score-container > p {
-		margin-top: 0.5em;
-		margin-bottom: 0.2em;
-	}
-
-	.footer-container {
-		display: flex;
-		gap: 150px;
-	}
-
 	button {
 		color: white;
 		background: black;
@@ -200,10 +179,6 @@
 		display: flex;
 		gap: 20px;
 		margin-top: 30px;
-	}
-
-	.score-container {
-		color: white;
 	}
 
 	:global(body) {

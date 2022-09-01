@@ -36,7 +36,6 @@ export const findRandomMove = (board: string[][]): Move => {
 	let randomCol = Math.floor(Math.random() * 3);
 	let randomMove = new Move(-1, -1);
 	while (board[randomRow][randomCol] !== '_') {
-		console.log('I GUESS');
 		randomRow = Math.floor(Math.random() * 3);
 		randomCol = Math.floor(Math.random() * 3);
 	}

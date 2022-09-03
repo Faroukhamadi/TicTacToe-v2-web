@@ -7,6 +7,6 @@ export const load: PageLoad = ({ url }) => {
 		throw redirect(307, '/login');
 	}
 	return {
-		name: name
+		name
 	};
 };

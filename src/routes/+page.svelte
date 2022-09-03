@@ -8,16 +8,13 @@
 	import Difficulty from '../lib/components/Difficulty.svelte';
 	import convertIndexCol from '../lib/utils/convertIndex';
 	import { onMount } from 'svelte';
-	import { initializeApp, getApps, getApp } from 'firebase/app';
-	import { ref } from 'firebase/database';
+	import { onDisconnect, ref } from 'firebase/database';
 	import { set, type DatabaseReference } from 'firebase/database';
 	import { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 	import { auth, db } from '../lib/firebase/index';
-	import { name } from '../stores';
-	import type { PageData, PageServerData } from './$types';
-	export let data: PageData;
+	import type { PageData } from './$types';
 
-	console.log('data: ', data.name);
+	export let data: PageData;
 
 	let playerId: string;
 	let playerRef: DatabaseReference;
@@ -36,10 +33,9 @@
 				console.log('this is playedRef: ', playerRef);
 				set(playerRef, {
 					id: playerId,
-					name: $name,
-					direction: 'right',
-					color: 'red'
+					name: data.name
 				});
+				onDisconnect(playerRef).remove();
 				// You're logged in
 			} else {
 				// You're logged out

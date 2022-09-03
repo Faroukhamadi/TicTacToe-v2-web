@@ -1,18 +1,9 @@
-<script lang="ts">
-	import { name } from '../../stores';
-</script>
-
 <footer>
 	<a href="https://github.com/Faroukhamadi" target="_blank">
 		<img src="GitHub-Mark-Light-32px.png" alt="Github Logo" /></a
 	>
 	<p>
-		<span
-			on:click={() => {
-				console.log('name: ', $name);
-			}}>Created</span
-		>
-		by
+		Created by
 		<a href="https://github.com/Faroukhamadi" target="_blank">Farouk Hamadi</a> with Love, Affection
 		and Care.
 	</p>

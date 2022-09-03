@@ -8,21 +8,53 @@
 	import Difficulty from '../lib/components/Difficulty.svelte';
 	import convertIndexCol from '../lib/utils/convertIndex';
 	import { onMount } from 'svelte';
-	import { onDisconnect, ref } from 'firebase/database';
-	import { set, type DatabaseReference } from 'firebase/database';
+	import { onDisconnect, ref, onValue, onChildAdded } from 'firebase/database';
+	import { set } from 'firebase/database';
 	import { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 	import { auth, db } from '../lib/firebase/index';
+	import type { DatabaseReference } from 'firebase/database';
 	import type { PageData } from './$types';
 
-	export let data: PageData;
+	interface PlayerValue {
+		id: string;
+		name: string;
+	}
 
+	export let data: PageData;
 	let playerId: string;
 	let playerRef: DatabaseReference;
+	let players: {
+		[key: string]: PlayerValue;
+	};
 
 	onMount(() => {
 		async function fetch() {
 			await signInAnonymously(auth);
 		}
+
+		const initGame = () => {
+			const allPlayersRef = ref(db, 'players');
+
+			onValue(allPlayersRef, (snapshot) => {
+				console.log('This is an event that fires whenever a change occurs: ', snapshot.val());
+				players = snapshot.val() || {};
+				Object.keys(players).forEach((uid) => {
+					const player = players[uid];
+					console.log('--------------uid---------------------: ', uid);
+					console.log('--------------this is player id---------------------: ', player.id);
+					console.log('--------------this is player name---------------------: ', player.name);
+				});
+			});
+
+			onChildAdded(allPlayersRef, (snapshot) => {
+				console.log('This is an event that fires whenever a player joins: ', snapshot.val().id);
+				if (snapshot.val().id === playerId) {
+					console.log('this is me: ', snapshot.val());
+				} else {
+					console.log('this is not me: ', snapshot.val());
+				}
+			});
+		};
 
 		onAuthStateChanged(auth, (user) => {
 			console.log('user: ', user);
@@ -43,6 +75,7 @@
 		});
 
 		fetch();
+		initGame();
 
 		return () => console.log('destroyed');
 	});

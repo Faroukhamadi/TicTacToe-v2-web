@@ -1,7 +1,12 @@
-import { name } from '../stores';
-import { get } from 'svelte/store';
+import { redirect } from '@sveltejs/kit';
+import type { PageLoad } from './$types';
 
-export function load({}) {
-	const storeValue = get(name);
-	console.log('this is the store value server side: ', storeValue);
-}
+export const load: PageLoad = ({ url }) => {
+	const name = url.searchParams.get('name');
+	if (!name) {
+		throw redirect(307, '/login');
+	}
+	return {
+		name: name
+	};
+};

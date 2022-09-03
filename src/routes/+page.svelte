@@ -12,9 +12,12 @@
 	import { ref } from 'firebase/database';
 	import { set, type DatabaseReference } from 'firebase/database';
 	import { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
-	import type { FirebaseApp } from 'firebase/app';
 	import { auth, db } from '../lib/firebase/index';
 	import { name } from '../stores';
+	import type { PageData, PageServerData } from './$types';
+	export let data: PageData;
+
+	console.log('data: ', data.name);
 
 	let playerId: string;
 	let playerRef: DatabaseReference;

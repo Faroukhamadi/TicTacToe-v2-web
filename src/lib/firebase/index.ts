@@ -2,6 +2,7 @@ import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getDatabase } from 'firebase/database';
 import type { FirebaseOptions } from 'firebase/app';
+import type { FirebaseApp } from 'firebase/app';
 
 export const firebaseConfig: FirebaseOptions = {
 	apiKey: 'AIzaSyDtY5nhWddcLCbZMsydQLYpB-tZcLYJbxo',
@@ -14,6 +15,6 @@ export const firebaseConfig: FirebaseOptions = {
 	measurementId: 'G-QB7VFQFE3X'
 };
 
-const app = initializeApp(firebaseConfig, 'tic-tac-toe');
+const app: FirebaseApp = initializeApp(firebaseConfig, 'tic-tac-toe');
 export const auth = getAuth(app);
 export const db = getDatabase(app);

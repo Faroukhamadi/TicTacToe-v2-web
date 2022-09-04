@@ -8,8 +8,7 @@
 	import Difficulty from '../lib/components/Difficulty.svelte';
 	import convertIndexCol from '../lib/utils/convertIndex';
 	import { onMount } from 'svelte';
-	import { onDisconnect, ref, onValue, onChildAdded } from 'firebase/database';
-	import { set } from 'firebase/database';
+	import { onDisconnect, ref, onValue, onChildAdded, push, get, set } from 'firebase/database';
 	import { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 	import { auth, db } from '../lib/firebase/index';
 	import type { DatabaseReference } from 'firebase/database';
@@ -23,6 +22,7 @@
 	export let data: PageData;
 	let playerId: string;
 	let playerRef: DatabaseReference;
+	let gameRef: DatabaseReference;
 	let players: {
 		[key: string]: PlayerValue;
 	};
@@ -33,39 +33,109 @@
 		}
 
 		const initGame = () => {
+			const allGamesRef = ref(db, 'games');
+
 			const allPlayersRef = ref(db, 'players');
+			console.log('players ref: ', allPlayersRef.parent);
+			console.log('games ref: ', allGamesRef);
+
+			onValue(allGamesRef, (snapshot) => {});
 
 			onValue(allPlayersRef, (snapshot) => {
-				console.log('This is an event that fires whenever a change occurs: ', snapshot.val());
+				// console.log('This is an event that fires whenever a change occurs: ', snapshot.val());
 				players = snapshot.val() || {};
 				Object.keys(players).forEach((uid) => {
 					const player = players[uid];
-					console.log('--------------uid---------------------: ', uid);
-					console.log('--------------this is player id---------------------: ', player.id);
-					console.log('--------------this is player name---------------------: ', player.name);
+					// console.log('--------------uid---------------------: ', uid);
+					// console.log('--------------this is player id---------------------: ', player.id);
+					// console.log('--------------this is player name---------------------: ', player.name);
+					// TODO: make firebase realtime db object look like this: https://miro.medium.com/max/1400/1*ZLZB_Oa3hK9kTMid5iNZ8A.png
 				});
 			});
 
 			onChildAdded(allPlayersRef, (snapshot) => {
 				console.log('This is an event that fires whenever a player joins: ', snapshot.val().id);
 				if (snapshot.val().id === playerId) {
-					console.log('this is me: ', snapshot.val());
+					// console.log('this is me: ', snapshot.val());
 				} else {
-					console.log('this is not me: ', snapshot.val());
+					// console.log('this is not me: ', snapshot.val());
 				}
 			});
 		};
-
 		onAuthStateChanged(auth, (user) => {
-			console.log('user: ', user);
 			if (user) {
 				playerId = user.uid;
-				playerRef = ref(db, `players/${playerId}`);
-				console.log('this is playedId: ', playerId);
-				console.log('this is playedRef: ', playerRef);
-				set(playerRef, {
-					id: playerId,
-					name: data.name
+				const allGamesRef = ref(db, 'games');
+				let gameId: string | null;
+				get(allGamesRef).then((snapshot) => {
+					if (snapshot.val()) {
+						Object.keys(snapshot.val()).forEach((key) => {
+							if (
+								snapshot.val()[key].players &&
+								Object.keys(snapshot.val()[key].players).length === 1
+							) {
+								// GET GAMEID AND ADD SECOND PLAYER
+								console.log('------------------1------------------');
+								playerRef = ref(db, `games/${key}/players`);
+								gameRef = ref(db, `games/${key}`);
+								// ----------------------------------->>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<-----------------------------------------
+								// is this the way to go ? I replaced set with push
+								push(playerRef, {
+									id: playerId,
+									name: data.name,
+									moves: [
+										{ i: 1, j: 2 },
+										{ i: 0, j: 2 },
+										{ i: 1, j: 0 }
+									]
+								});
+							} else {
+								// CREATE NEW GAME AND ADD FIRST PLAYER
+								console.log('------------------2------------------');
+								gameId = push(allGamesRef).key;
+								playerRef = ref(db, `games/${gameId}/players/${playerId}`);
+								gameRef = ref(db, `games/${gameId}`);
+								set(gameRef, {
+									turn: playerId,
+									ready: {
+										player1: true,
+										player2: true
+									}
+								});
+								set(playerRef, {
+									id: playerId,
+									name: data.name,
+									moves: [
+										{ i: 1, j: 2 },
+										{ i: 0, j: 2 },
+										{ i: 1, j: 0 }
+									]
+								});
+							}
+						});
+					} else {
+						// NO GAME HAS EVER BEEN CREATED
+						console.log('------------------3------------------');
+						gameId = push(allGamesRef).key;
+						playerRef = ref(db, `games/${gameId}/players/${playerId}`);
+						gameRef = ref(db, `games/${gameId}`);
+						set(gameRef, {
+							turn: playerId,
+							ready: {
+								player1: true,
+								player2: true
+							}
+						});
+						set(playerRef, {
+							id: playerId,
+							name: data.name,
+							moves: [
+								{ i: 1, j: 2 },
+								{ i: 0, j: 2 },
+								{ i: 1, j: 0 }
+							]
+						});
+					}
 				});
 				onDisconnect(playerRef).remove();
 				// You're logged in

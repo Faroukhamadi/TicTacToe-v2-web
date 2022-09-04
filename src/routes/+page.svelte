@@ -8,8 +8,18 @@
 	import Difficulty from '../lib/components/Difficulty.svelte';
 	import convertIndexCol from '../lib/utils/convertIndex';
 	import { onMount } from 'svelte';
-	import { onDisconnect, ref, onValue, onChildAdded, push, get, set } from 'firebase/database';
-	import { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
+	import {
+		onDisconnect,
+		ref,
+		onValue,
+		onChildAdded,
+		push,
+		get,
+		set,
+		update,
+		getDatabase
+	} from 'firebase/database';
+	import { signInAnonymously, onAuthStateChanged, updateCurrentUser } from 'firebase/auth';
 	import { auth, db } from '../lib/firebase/index';
 	import type { DatabaseReference } from 'firebase/database';
 	import type { PageData } from './$types';
@@ -21,6 +31,7 @@
 
 	export let data: PageData;
 	let playerId: string;
+	let gameId: string | null;
 	let playerRef: DatabaseReference;
 	let gameRef: DatabaseReference;
 	let players: {
@@ -34,27 +45,25 @@
 
 		const initGame = () => {
 			const allGamesRef = ref(db, 'games');
+			const allPlayersRef = ref(db, 'games/-NB66_MdnLwv9jan9O8g/players');
 
-			const allPlayersRef = ref(db, 'players');
-			console.log('players ref: ', allPlayersRef.parent);
-			console.log('games ref: ', allGamesRef);
-
-			onValue(allGamesRef, (snapshot) => {});
+			onValue(allGamesRef, (snapshot) => {
+				if (snapshot.val()) {
+					Object.keys(snapshot.val()).forEach((key) => {
+						console.log(snapshot.val()[key]);
+					});
+				}
+			});
 
 			onValue(allPlayersRef, (snapshot) => {
-				// console.log('This is an event that fires whenever a change occurs: ', snapshot.val());
 				players = snapshot.val() || {};
 				Object.keys(players).forEach((uid) => {
 					const player = players[uid];
-					// console.log('--------------uid---------------------: ', uid);
-					// console.log('--------------this is player id---------------------: ', player.id);
-					// console.log('--------------this is player name---------------------: ', player.name);
-					// TODO: make firebase realtime db object look like this: https://miro.medium.com/max/1400/1*ZLZB_Oa3hK9kTMid5iNZ8A.png
 				});
 			});
 
 			onChildAdded(allPlayersRef, (snapshot) => {
-				console.log('This is an event that fires whenever a player joins: ', snapshot.val().id);
+				// console.log('This is an event that fires whenever a player joins: ', snapshot.val());
 				if (snapshot.val().id === playerId) {
 					// console.log('this is me: ', snapshot.val());
 				} else {
@@ -65,8 +74,8 @@
 		onAuthStateChanged(auth, (user) => {
 			if (user) {
 				playerId = user.uid;
+
 				const allGamesRef = ref(db, 'games');
-				let gameId: string | null;
 				get(allGamesRef).then((snapshot) => {
 					if (snapshot.val()) {
 						Object.keys(snapshot.val()).forEach((key) => {
@@ -78,22 +87,17 @@
 								console.log('------------------1------------------');
 								playerRef = ref(db, `games/${key}/players`);
 								gameRef = ref(db, `games/${key}`);
-								// ----------------------------------->>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<-----------------------------------------
-								// is this the way to go ? I replaced set with push
+
 								push(playerRef, {
 									id: playerId,
 									name: data.name,
-									moves: [
-										{ i: 1, j: 2 },
-										{ i: 0, j: 2 },
-										{ i: 1, j: 0 }
-									]
+									moves: []
 								});
 							} else {
 								// CREATE NEW GAME AND ADD FIRST PLAYER
 								console.log('------------------2------------------');
 								gameId = push(allGamesRef).key;
-								playerRef = ref(db, `games/${gameId}/players/${playerId}`);
+								playerRef = ref(db, `games/${gameId}/players`);
 								gameRef = ref(db, `games/${gameId}`);
 								set(gameRef, {
 									turn: playerId,
@@ -105,11 +109,7 @@
 								set(playerRef, {
 									id: playerId,
 									name: data.name,
-									moves: [
-										{ i: 1, j: 2 },
-										{ i: 0, j: 2 },
-										{ i: 1, j: 0 }
-									]
+									moves: []
 								});
 							}
 						});
@@ -129,16 +129,12 @@
 						set(playerRef, {
 							id: playerId,
 							name: data.name,
-							moves: [
-								{ i: 1, j: 2 },
-								{ i: 0, j: 2 },
-								{ i: 1, j: 0 }
-							]
+							moves: []
 						});
 					}
 				});
-				onDisconnect(playerRef).remove();
 				// You're logged in
+				onDisconnect(playerRef).remove();
 			} else {
 				// You're logged out
 			}
@@ -158,15 +154,15 @@
 	let playerScore = 0;
 	let AIScore = 0;
 	let drawCount = 0;
-	let difficulty = 'easy';
+	let mode = 'easy';
 
 	let AITurn = true;
 	if (AITurn) {
 		let bestMove: Move;
-		if (difficulty === 'hard') {
+		if (mode === 'hard') {
 			bestMove = findBestMove(board, player, opponent);
 			board[bestMove.row][bestMove.col] = player;
-		} else if (difficulty === 'easy') {
+		} else if (mode === 'easy') {
 			bestMove = findRandomMove(board);
 			board[bestMove.row][bestMove.col] = player;
 		}
@@ -199,19 +195,28 @@
 								!isAIWin(evaluateRes) &&
 								!isDraw(evaluateRes, board)
 							) {
-								board[i][j] = opponent;
-								let bestMove;
-								if (difficulty === 'hard') {
-									bestMove = findBestMove(board, player, opponent);
-									board[bestMove.row][bestMove.col] = player;
-								} else if (
-									difficulty === 'easy' &&
-									!isPlayerWin(evaluateRes) &&
-									!isAIWin(evaluateRes) &&
-									!isDraw(evaluateRes, board)
-								) {
-									bestMove = findRandomMove(board);
-									board[bestMove.row][bestMove.col] = player;
+								if (mode === 'multiplayer') {
+									// const updates: any = {};
+									get();
+									// updates[`games/${gameId}/${auth.currentUser}`] = '';
+									update(playerRef, {
+										//
+									});
+								} else {
+									board[i][j] = opponent;
+									let bestMove;
+									if (mode === 'hard') {
+										bestMove = findBestMove(board, player, opponent);
+										board[bestMove.row][bestMove.col] = player;
+									} else if (
+										mode === 'easy' &&
+										!isPlayerWin(evaluateRes) &&
+										!isAIWin(evaluateRes) &&
+										!isDraw(evaluateRes, board)
+									) {
+										bestMove = findRandomMove(board);
+										board[bestMove.row][bestMove.col] = player;
+									}
 								}
 							}
 						}}
@@ -220,10 +225,11 @@
 			{/each}
 		{/each}
 	</div>
-	<Difficulty {playerScore} {AIScore} {drawCount} {difficulty} />
+	<Difficulty {playerScore} {AIScore} {drawCount} {mode} />
 	<div class="button-container">
-		<button on:click={() => (difficulty = 'easy')} id="ez">EASY</button>
-		<button on:click={() => (difficulty = 'hard')} id="hrd">HARD</button>
+		<button on:click={() => (mode = 'easy')} id="ez">EASY</button>
+		<button on:click={() => (mode = 'hard')} id="hrd">HARD</button>
+		<button on:click={() => (mode = 'multiplayer')} id="mtp">MULTIPLAYER</button>
 		<button
 			on:click={() => {
 				let evaluateRes = evaluate(board, player, opponent);
@@ -251,7 +257,7 @@
 		color: white;
 		background: black;
 		font-size: xx-large;
-		width: 300px;
+		min-width: 300px;
 		height: 100px;
 		border-radius: 15px;
 		border: 5px solid white;
@@ -271,6 +277,10 @@
 
 	#hrd:hover {
 		border-color: red;
+	}
+
+	#mtp:hover {
+		border-color: blue;
 	}
 
 	#rs:hover {

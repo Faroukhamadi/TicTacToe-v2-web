@@ -2,9 +2,10 @@
 	export let playerScore: number;
 	export let AIScore: number;
 	export let drawCount: number;
-	export let difficulty: string;
+	export let mode: string;
 </script>
 
+<!-- TODO: make X or O dependent on player and opponent when I implement multiplayer -->
 <div class="footer-container">
 	<div class="score-container">
 		<p>PLAYER1(X)</p>
@@ -15,7 +16,13 @@
 		<p>{drawCount}</p>
 	</div>
 	<div class="score-container">
-		<p>{difficulty === 'easy' ? 'EASY ' : 'UNBEATABLE '}AI(O)</p>
+		{#if mode === 'easy'}
+			<p>EASY AI(O)</p>
+		{:else if mode === 'hard'}
+			<p>UNBEATABLE AI(O)</p>
+		{:else}
+			<p>PLAYER2(O)</p>
+		{/if}
 		<p>{AIScore}</p>
 	</div>
 </div>

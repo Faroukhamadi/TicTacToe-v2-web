@@ -17,9 +17,9 @@
 		get,
 		set,
 		update,
-		getDatabase
+		off
 	} from 'firebase/database';
-	import { signInAnonymously, onAuthStateChanged, updateCurrentUser } from 'firebase/auth';
+	import { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 	import { auth, db } from '../lib/firebase/index';
 	import type { DatabaseReference } from 'firebase/database';
 	import type { PageData } from './$types';
@@ -196,11 +196,31 @@
 								!isDraw(evaluateRes, board)
 							) {
 								if (mode === 'multiplayer') {
-									// const updates: any = {};
-									get();
-									// updates[`games/${gameId}/${auth.currentUser}`] = '';
-									update(playerRef, {
-										//
+									off(gameRef);
+									onValue(gameRef, (snapshot) => {
+										const data = snapshot.val();
+										let moves;
+										if (
+											// @ts-ignore
+											data.players[auth.currentUser.uid].moves &&
+											// @ts-ignore
+											!data.players[auth.currentUser.uid].moves.some((e) => e.i === i && e.j === j)
+										) {
+											console.log('it doesnt exist');
+											// @ts-ignore
+											moves = data.players[auth.currentUser.uid].moves;
+											moves.push({ i, j });
+											// @ts-ignore
+										} else if (!data.players[auth.currentUser?.uid].moves) {
+											console.log('no moves yet');
+
+											moves = [{ i, j }];
+										}
+										const updates = {};
+										// @ts-ignore
+										updates['/games/' + gameId + '/players/' + auth.currentUser?.uid + '/moves'] =
+											moves;
+										update(ref(db), updates);
 									});
 								} else {
 									board[i][j] = opponent;

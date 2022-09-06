@@ -249,16 +249,14 @@
 									onValue(gameRef, (snapshot) => {
 										const data = snapshot.val();
 										let playerKeys = Object.keys(data.players);
-										let players = [];
 										let id = '';
 										playerKeys.forEach((key) => {
-											players.push(data.players[key]);
 											if (data.players[key].id === auth.currentUser.uid) {
 												id = key;
 											}
 										});
 
-										if (players.length === 2) {
+										if (playerKeys.length === 2) {
 											let moves;
 											if (
 												// @ts-ignore
@@ -266,7 +264,7 @@
 												// @ts-ignore
 												!data.players[id].moves.some(
 													// @ts-ignore
-													(e) => e.i === i && e.j === j
+													(move) => move.i === i && move.j === j
 												)
 											) {
 												// @ts-ignore
@@ -278,10 +276,7 @@
 											}
 											const updates = {};
 											// @ts-ignore
-											updates['/games/' + gameId + '/players/' + id + '/moves'] = moves;
-
-											console.log('updates: ', updates);
-											console.log('moves: ', moves);
+											updates[`/games/${gameId}/players/${id}/moves`] = moves;
 
 											if (moves) {
 												// @ts-ignore

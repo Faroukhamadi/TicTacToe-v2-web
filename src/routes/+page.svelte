@@ -46,7 +46,6 @@
 						if (playerKeys.length === 2) {
 							const player1Moves = data.players[playerKeys[0]].moves;
 							const player2Moves = data.players[playerKeys[1]].moves;
-							console.log(player1Moves, player2Moves);
 
 							if (player1Moves) {
 								// @ts-ignore
@@ -218,15 +217,18 @@
 										let playerKeys = Object.keys(data.players);
 										let playersIds = [];
 										let id = '';
+										let turn = '';
 										playerKeys.forEach((key) => {
 											playersIds.push(data.players[key].id);
 											// @ts-ignore
 											if (data.players[key].id === auth.currentUser.uid) {
 												id = key;
+											} else {
+												turn = data.players[key].id;
 											}
 										});
-
-										if (playerKeys.length === 2) {
+										// @ts-ignore
+										if (playerKeys.length === 2 && data.turn === auth.currentUser.uid) {
 											let moves;
 											if (
 												// @ts-ignore
@@ -247,6 +249,8 @@
 											const updates = {};
 											// @ts-ignore
 											updates[`/games/${gameId}/players/${id}/moves`] = moves;
+											// @ts-ignore
+											updates[`/games/${gameId}/turn`] = turn;
 
 											update(ref(db), updates);
 										}
@@ -329,11 +333,11 @@
 	}
 
 	#mtp:hover {
-		border-color: blue;
+		border-color: white;
 	}
 
 	#rs:hover {
-		border-color: black;
+		border-color: white;
 	}
 
 	.button-container {

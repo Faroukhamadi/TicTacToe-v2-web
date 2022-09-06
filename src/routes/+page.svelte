@@ -8,6 +8,10 @@
 	import Difficulty from '../lib/components/Difficulty.svelte';
 	import convertIndexCol from '../lib/utils/convertIndex';
 	import { onMount } from 'svelte';
+	import { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
+	import { auth, db } from '../lib/firebase/index';
+	import type { DatabaseReference } from 'firebase/database';
+	import type { PageData } from './$types';
 	import {
 		onDisconnect,
 		ref,
@@ -16,18 +20,8 @@
 		push,
 		get,
 		set,
-		update,
-		off
+		update
 	} from 'firebase/database';
-	import { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
-	import { auth, db } from '../lib/firebase/index';
-	import type { DatabaseReference } from 'firebase/database';
-	import type { PageData } from './$types';
-
-	interface PlayerValue {
-		id: string;
-		name: string;
-	}
 
 	export let data: PageData;
 	let playerId: string;
@@ -36,23 +30,43 @@
 	let gameRef: DatabaseReference;
 
 	onMount(() => {
-		async function fetch() {
+		async function signIn() {
 			await signInAnonymously(auth);
 		}
 
-		const initGame = () => {
+		const updateMultiplayerBoard = () => {
 			const allGamesRef = ref(db, 'games');
-
 			onValue(allGamesRef, (snapshot) => {
-				console.log('allPlayersRef: ', allGamesRef.key);
+				if (gameId) {
+					const data = snapshot.val()[gameId];
 
-				if (snapshot.val()) {
-					Object.keys(snapshot.val()).forEach((key) => {
-						console.log(snapshot.val()[key]);
-					});
+					if (data.players) {
+						let playerKeys = Object.keys(data.players);
+
+						if (playerKeys.length === 2) {
+							const player1Moves = data.players[playerKeys[0]].moves;
+							const player2Moves = data.players[playerKeys[1]].moves;
+							console.log(player1Moves, player2Moves);
+
+							if (player1Moves) {
+								// @ts-ignore
+								player1Moves.forEach((move) => {
+									board[move.i][move.j] = '+';
+								});
+							}
+
+							if (player2Moves) {
+								// @ts-ignore
+								player2Moves.forEach((move) => {
+									board[move.i][move.j] = 'o';
+								});
+							}
+						}
+					}
 				}
 			});
 		};
+
 		onAuthStateChanged(auth, (user) => {
 			if (user) {
 				playerId = user.uid;
@@ -115,8 +129,6 @@
 
 						onChildAdded(allPlayersRef, (snapshot) => {
 							// console.log('This is an event that fires whenever a player joins: ', snapshot.val());
-							console.log('child added and this is snaphot.val(): ', snapshot.val());
-							console.log('snapshot key: ', snapshot.key);
 							if (snapshot.val().id === playerId) {
 								// console.log('this is me: ', snapshot.val());
 							} else {
@@ -145,8 +157,8 @@
 			}
 		});
 
-		fetch();
-		initGame();
+		signIn();
+		updateMultiplayerBoard();
 
 		return () => console.log('destroyed');
 	});
@@ -204,8 +216,10 @@
 									onValue(gameRef, (snapshot) => {
 										const data = snapshot.val();
 										let playerKeys = Object.keys(data.players);
+										let playersIds = [];
 										let id = '';
 										playerKeys.forEach((key) => {
+											playersIds.push(data.players[key].id);
 											// @ts-ignore
 											if (data.players[key].id === auth.currentUser.uid) {
 												id = key;
@@ -234,12 +248,6 @@
 											// @ts-ignore
 											updates[`/games/${gameId}/players/${id}/moves`] = moves;
 
-											if (moves) {
-												// @ts-ignore
-												moves.forEach((move) => {
-													board[move.i][move.j] = '+';
-												});
-											}
 											update(ref(db), updates);
 										}
 									});

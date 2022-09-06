@@ -34,9 +34,6 @@
 	let gameId: string | null;
 	let playerRef: DatabaseReference;
 	let gameRef: DatabaseReference;
-	let players: {
-		[key: string]: PlayerValue;
-	};
 
 	onMount(() => {
 		async function fetch() {
@@ -59,7 +56,7 @@
 		onAuthStateChanged(auth, (user) => {
 			if (user) {
 				playerId = user.uid;
-
+				let state = -1;
 				const allGamesRef = ref(db, 'games');
 				get(allGamesRef).then((snapshot) => {
 					if (snapshot.val()) {
@@ -70,40 +67,14 @@
 							) {
 								// GET GAMEID AND ADD SECOND PLAYER
 								console.log('------------------1------------------');
+								state = 1;
 								playerRef = ref(db, `games/${key}/players`);
 								gameRef = ref(db, `games/${key}`);
 								gameId = key;
-
-								push(playerRef, {
-									id: playerId,
-									name: data.name,
-									moves: []
-								});
-								onDisconnect(playerRef).remove();
-
-								const allPlayersRef = ref(db, `games/${gameId}/players`);
-
-								onValue(allPlayersRef, (snapshot) => {
-									players = snapshot.val() || {};
-									Object.keys(players).forEach((uid) => {
-										const player = players[uid];
-									});
-								});
-
-								onChildAdded(allPlayersRef, (snapshot) => {
-									// console.log('This is an event that fires whenever a player joins: ', snapshot.val());
-									console.log('child added and this is snaphot.val(): ', snapshot.val());
-									console.log('snapshot key: ', snapshot.key);
-									// snapshot.key = '';
-									if (snapshot.val().id === playerId) {
-										// console.log('this is me: ', snapshot.val());
-									} else {
-										// console.log('this is not me: ', snapshot.val());
-									}
-								});
 							} else {
 								// CREATE NEW GAME AND ADD FIRST PLAYER
 								console.log('------------------2------------------');
+								state = 2;
 								gameId = push(allGamesRef).key;
 								playerRef = ref(db, `games/${gameId}/players`);
 								gameRef = ref(db, `games/${gameId}`);
@@ -114,26 +85,9 @@
 										player2: true
 									}
 								});
-								set(playerRef, {
-									id: playerId,
-									name: data.name,
-									moves: []
-								});
-								onDisconnect(playerRef).remove();
-
 								const allPlayersRef = ref(db, `games/${gameId}/players`);
 
-								onValue(allPlayersRef, (snapshot) => {
-									players = snapshot.val() || {};
-									Object.keys(players).forEach((uid) => {
-										const player = players[uid];
-									});
-								});
-
 								onChildAdded(allPlayersRef, (snapshot) => {
-									// console.log('This is an event that fires whenever a player joins: ', snapshot.val());
-									console.log('child added and this is snaphot.val(): ', snapshot.val());
-									console.log('snapshot key: ', snapshot.key);
 									if (snapshot.val().id === playerId) {
 										// console.log('this is me: ', snapshot.val());
 									} else {
@@ -145,6 +99,7 @@
 					} else {
 						// NO GAME HAS EVER BEEN CREATED
 						console.log('------------------3------------------');
+						state = 3;
 						gameId = push(allGamesRef).key;
 						playerRef = ref(db, `games/${gameId}/players/${playerId}`);
 						gameRef = ref(db, `games/${gameId}`);
@@ -155,22 +110,8 @@
 								player2: true
 							}
 						});
-						set(playerRef, {
-							id: playerId,
-							name: data.name,
-							moves: []
-						});
-
-						onDisconnect(playerRef).remove();
 
 						const allPlayersRef = ref(db, `games/${gameId}/players`);
-
-						onValue(allPlayersRef, (snapshot) => {
-							players = snapshot.val() || {};
-							Object.keys(players).forEach((uid) => {
-								const player = players[uid];
-							});
-						});
 
 						onChildAdded(allPlayersRef, (snapshot) => {
 							// console.log('This is an event that fires whenever a player joins: ', snapshot.val());
@@ -182,6 +123,20 @@
 								// console.log('this is not me: ', snapshot.val());
 							}
 						});
+					}
+					// try this here
+					if (state === 1) {
+						push(playerRef, {
+							id: playerId,
+							name: data.name
+						});
+						onDisconnect(playerRef).remove();
+					} else if (state === 2 || state === 3) {
+						set(playerRef, {
+							id: playerId,
+							name: data.name
+						});
+						onDisconnect(playerRef).remove();
 					}
 				});
 				// You're logged in
@@ -251,6 +206,7 @@
 										let playerKeys = Object.keys(data.players);
 										let id = '';
 										playerKeys.forEach((key) => {
+											// @ts-ignore
 											if (data.players[key].id === auth.currentUser.uid) {
 												id = key;
 											}

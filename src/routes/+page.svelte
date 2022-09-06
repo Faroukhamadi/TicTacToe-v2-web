@@ -45,29 +45,14 @@
 
 		const initGame = () => {
 			const allGamesRef = ref(db, 'games');
-			const allPlayersRef = ref(db, 'games/-NB66_MdnLwv9jan9O8g/players');
 
 			onValue(allGamesRef, (snapshot) => {
+				console.log('allPlayersRef: ', allGamesRef.key);
+
 				if (snapshot.val()) {
 					Object.keys(snapshot.val()).forEach((key) => {
 						console.log(snapshot.val()[key]);
 					});
-				}
-			});
-
-			onValue(allPlayersRef, (snapshot) => {
-				players = snapshot.val() || {};
-				Object.keys(players).forEach((uid) => {
-					const player = players[uid];
-				});
-			});
-
-			onChildAdded(allPlayersRef, (snapshot) => {
-				// console.log('This is an event that fires whenever a player joins: ', snapshot.val());
-				if (snapshot.val().id === playerId) {
-					// console.log('this is me: ', snapshot.val());
-				} else {
-					// console.log('this is not me: ', snapshot.val());
 				}
 			});
 		};
@@ -87,11 +72,34 @@
 								console.log('------------------1------------------');
 								playerRef = ref(db, `games/${key}/players`);
 								gameRef = ref(db, `games/${key}`);
+								gameId = key;
 
 								push(playerRef, {
 									id: playerId,
 									name: data.name,
 									moves: []
+								});
+								onDisconnect(playerRef).remove();
+
+								const allPlayersRef = ref(db, `games/${gameId}/players`);
+
+								onValue(allPlayersRef, (snapshot) => {
+									players = snapshot.val() || {};
+									Object.keys(players).forEach((uid) => {
+										const player = players[uid];
+									});
+								});
+
+								onChildAdded(allPlayersRef, (snapshot) => {
+									// console.log('This is an event that fires whenever a player joins: ', snapshot.val());
+									console.log('child added and this is snaphot.val(): ', snapshot.val());
+									console.log('snapshot key: ', snapshot.key);
+									// snapshot.key = '';
+									if (snapshot.val().id === playerId) {
+										// console.log('this is me: ', snapshot.val());
+									} else {
+										// console.log('this is not me: ', snapshot.val());
+									}
 								});
 							} else {
 								// CREATE NEW GAME AND ADD FIRST PLAYER
@@ -110,6 +118,27 @@
 									id: playerId,
 									name: data.name,
 									moves: []
+								});
+								onDisconnect(playerRef).remove();
+
+								const allPlayersRef = ref(db, `games/${gameId}/players`);
+
+								onValue(allPlayersRef, (snapshot) => {
+									players = snapshot.val() || {};
+									Object.keys(players).forEach((uid) => {
+										const player = players[uid];
+									});
+								});
+
+								onChildAdded(allPlayersRef, (snapshot) => {
+									// console.log('This is an event that fires whenever a player joins: ', snapshot.val());
+									console.log('child added and this is snaphot.val(): ', snapshot.val());
+									console.log('snapshot key: ', snapshot.key);
+									if (snapshot.val().id === playerId) {
+										// console.log('this is me: ', snapshot.val());
+									} else {
+										// console.log('this is not me: ', snapshot.val());
+									}
 								});
 							}
 						});
@@ -131,10 +160,31 @@
 							name: data.name,
 							moves: []
 						});
+
+						onDisconnect(playerRef).remove();
+
+						const allPlayersRef = ref(db, `games/${gameId}/players`);
+
+						onValue(allPlayersRef, (snapshot) => {
+							players = snapshot.val() || {};
+							Object.keys(players).forEach((uid) => {
+								const player = players[uid];
+							});
+						});
+
+						onChildAdded(allPlayersRef, (snapshot) => {
+							// console.log('This is an event that fires whenever a player joins: ', snapshot.val());
+							console.log('child added and this is snaphot.val(): ', snapshot.val());
+							console.log('snapshot key: ', snapshot.key);
+							if (snapshot.val().id === playerId) {
+								// console.log('this is me: ', snapshot.val());
+							} else {
+								// console.log('this is not me: ', snapshot.val());
+							}
+						});
 					}
 				});
 				// You're logged in
-				onDisconnect(playerRef).remove();
 			} else {
 				// You're logged out
 			}
@@ -196,31 +246,51 @@
 								!isDraw(evaluateRes, board)
 							) {
 								if (mode === 'multiplayer') {
-									off(gameRef);
 									onValue(gameRef, (snapshot) => {
 										const data = snapshot.val();
-										let moves;
-										if (
-											// @ts-ignore
-											data.players[auth.currentUser.uid].moves &&
-											// @ts-ignore
-											!data.players[auth.currentUser.uid].moves.some((e) => e.i === i && e.j === j)
-										) {
-											console.log('it doesnt exist');
-											// @ts-ignore
-											moves = data.players[auth.currentUser.uid].moves;
-											moves.push({ i, j });
-											// @ts-ignore
-										} else if (!data.players[auth.currentUser?.uid].moves) {
-											console.log('no moves yet');
+										let playerKeys = Object.keys(data.players);
+										let players = [];
+										let id = '';
+										playerKeys.forEach((key) => {
+											players.push(data.players[key]);
+											if (data.players[key].id === auth.currentUser.uid) {
+												id = key;
+											}
+										});
 
-											moves = [{ i, j }];
+										if (players.length === 2) {
+											let moves;
+											if (
+												// @ts-ignore
+												data.players[id].moves &&
+												// @ts-ignore
+												!data.players[id].moves.some(
+													// @ts-ignore
+													(e) => e.i === i && e.j === j
+												)
+											) {
+												// @ts-ignore
+												moves = data.players[id].moves;
+												moves.push({ i, j });
+												// @ts-ignore
+											} else if (!data.players[id].moves) {
+												moves = [{ i, j }];
+											}
+											const updates = {};
+											// @ts-ignore
+											updates['/games/' + gameId + '/players/' + id + '/moves'] = moves;
+
+											console.log('updates: ', updates);
+											console.log('moves: ', moves);
+
+											if (moves) {
+												// @ts-ignore
+												moves.forEach((move) => {
+													board[move.i][move.j] = '+';
+												});
+											}
+											update(ref(db), updates);
 										}
-										const updates = {};
-										// @ts-ignore
-										updates['/games/' + gameId + '/players/' + auth.currentUser?.uid + '/moves'] =
-											moves;
-										update(ref(db), updates);
 									});
 								} else {
 									board[i][j] = opponent;

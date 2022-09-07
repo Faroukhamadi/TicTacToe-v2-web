@@ -1,17 +1,17 @@
 <script lang="ts">
-	import { findBestMove, findRandomMove, Move } from '../lib/utils/findMove';
-	import { isAIWin, isDraw, isPlayerWin } from '../lib/utils/gameResult';
+	import type { DatabaseReference } from 'firebase/database';
+	import type { PageData } from './$types';
 	import evaluate from '../lib/utils/evaluate';
 	import initBoard from '../lib/utils/initBoard';
 	import restart from '../lib/utils/restart';
 	import Footer from '../lib/components/Footer.svelte';
 	import Difficulty from '../lib/components/Difficulty.svelte';
 	import convertIndexCol from '../lib/utils/convertIndex';
+	import { findBestMove, findRandomMove, Move } from '../lib/utils/findMove';
+	import { isAIWin, isDraw, isPlayerWin } from '../lib/utils/gameResult';
 	import { onMount } from 'svelte';
 	import { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 	import { auth, db } from '../lib/firebase/index';
-	import type { DatabaseReference } from 'firebase/database';
-	import type { PageData } from './$types';
 	import {
 		onDisconnect,
 		ref,
@@ -50,14 +50,18 @@
 							if (player1Moves) {
 								// @ts-ignore
 								player1Moves.forEach((move) => {
-									board[move.i][move.j] = '+';
+									if (board[move.i][move.j] === '_') {
+										board[move.i][move.j] = '+';
+									}
 								});
 							}
 
 							if (player2Moves) {
 								// @ts-ignore
 								player2Moves.forEach((move) => {
-									board[move.i][move.j] = 'o';
+									if (board[move.i][move.j] === '_') {
+										board[move.i][move.j] = 'o';
+									}
 								});
 							}
 						}
@@ -171,6 +175,7 @@
 	let AIScore = 0;
 	let drawCount = 0;
 	let mode = 'easy';
+	let onlineTurn: 'player1' | 'player2' = 'player1';
 
 	let AITurn = true;
 	if (AITurn) {
@@ -212,23 +217,23 @@
 								!isDraw(evaluateRes, board)
 							) {
 								if (mode === 'multiplayer') {
-									onValue(gameRef, (snapshot) => {
+									const unsubscribe = onValue(gameRef, (snapshot) => {
 										const data = snapshot.val();
 										let playerKeys = Object.keys(data.players);
-										let playersIds = [];
-										let id = '';
-										let turn = '';
-										playerKeys.forEach((key) => {
-											playersIds.push(data.players[key].id);
-											// @ts-ignore
-											if (data.players[key].id === auth.currentUser.uid) {
-												id = key;
-											} else {
-												turn = data.players[key].id;
-											}
-										});
 										// @ts-ignore
 										if (playerKeys.length === 2 && data.turn === auth.currentUser.uid) {
+											let playersIds = [];
+											let id = '';
+											let turn = '';
+											playerKeys.forEach((key) => {
+												playersIds.push(data.players[key].id);
+												// @ts-ignore
+												if (data.players[key].id === auth.currentUser.uid) {
+													id = key;
+												} else {
+													turn = data.players[key].id;
+												}
+											});
 											let moves;
 											if (
 												// @ts-ignore
@@ -252,9 +257,12 @@
 											// @ts-ignore
 											updates[`/games/${gameId}/turn`] = turn;
 
-											update(ref(db), updates);
+											update(ref(db), updates).then(() => {
+												console.log('updated');
+											});
 										}
 									});
+									unsubscribe();
 								} else {
 									board[i][j] = opponent;
 									let bestMove;

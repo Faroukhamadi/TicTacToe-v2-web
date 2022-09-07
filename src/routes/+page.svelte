@@ -289,15 +289,13 @@
 			}}
 			id="mtp">MULTIPLAYER</button
 		>
-		<!-- PUT THIS INSIDE DISABLED -->
-		<!-- mode === 'multiplayer' &&
-			 	!(
-			 		isPlayerWin(evaluate(board, player, opponent)) ||
-			 		isAIWin(evaluate(board, player, opponent)) ||
-			 		isDraw(evaluate(board, player, opponent), board)
-			 	) -->
 		<button
-			disabled={false}
+			disabled={mode === 'multiplayer' &&
+				!(
+					isPlayerWin(evaluate(board, player, opponent)) ||
+					isAIWin(evaluate(board, player, opponent)) ||
+					isDraw(evaluate(board, player, opponent), board)
+				)}
 			on:click={() => {
 				let evaluateRes = evaluate(board, player, opponent);
 

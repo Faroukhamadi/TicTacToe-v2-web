@@ -20,7 +20,9 @@
 		push,
 		get,
 		set,
-		update
+		update,
+		remove,
+		increment
 	} from 'firebase/database';
 
 	export let data: PageData;
@@ -68,6 +70,12 @@
 							if (!player1Moves && !player2Moves) {
 								board = initBoard();
 							}
+						} else if (data.left === 2) {
+							console.log('data.left2: ', data.left);
+							let gameRef = ref(db, `games/${gameId}`);
+							remove(gameRef).then(() => {
+								console.log('game removed because there are no players left');
+							});
 						}
 					}
 				}
@@ -101,10 +109,7 @@
 								gameRef = ref(db, `games/${gameId}`);
 								set(gameRef, {
 									turn: playerId,
-									ready: {
-										player1: true,
-										player2: true
-									}
+									left: 0
 								});
 								const allPlayersRef = ref(db, `games/${gameId}/players`);
 
@@ -126,10 +131,7 @@
 						gameRef = ref(db, `games/${gameId}`);
 						set(gameRef, {
 							turn: playerId,
-							ready: {
-								player1: true,
-								player2: true
-							}
+							left: 0
 						});
 					}
 					// try this here
@@ -138,13 +140,29 @@
 							id: playerId,
 							name: data.name
 						});
-						onDisconnect(playerRef).remove();
+						onDisconnect(playerRef)
+							.remove()
+							.then(() => {
+								const updates: any = {};
+								updates[`games/${gameId}/left`] = increment(1);
+								update(ref(db), updates).then(() => {
+									console.log('updated');
+								});
+							});
 					} else if (state === 2 || state === 3) {
 						set(playerRef, {
 							id: playerId,
 							name: data.name
 						});
-						onDisconnect(playerRef).remove();
+						onDisconnect(playerRef)
+							.remove()
+							.then(() => {
+								const updates: any = {};
+								updates[`games/${gameId}/left`] = increment(1);
+								update(ref(db), updates).then(() => {
+									console.log('updated');
+								});
+							});
 					}
 				});
 				// You're logged in

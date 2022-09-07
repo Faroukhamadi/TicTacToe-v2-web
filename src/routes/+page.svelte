@@ -64,6 +64,10 @@
 									}
 								});
 							}
+
+							if (!player1Moves && !player2Moves) {
+								board = initBoard();
+							}
 						}
 					}
 				}
@@ -127,17 +131,6 @@
 								player2: true
 							}
 						});
-
-						const allPlayersRef = ref(db, `games/${gameId}/players`);
-
-						onChildAdded(allPlayersRef, (snapshot) => {
-							// console.log('This is an event that fires whenever a player joins: ', snapshot.val());
-							if (snapshot.val().id === playerId) {
-								// console.log('this is me: ', snapshot.val());
-							} else {
-								// console.log('this is not me: ', snapshot.val());
-							}
-						});
 					}
 					// try this here
 					if (state === 1) {
@@ -175,7 +168,6 @@
 	let AIScore = 0;
 	let drawCount = 0;
 	let mode = 'easy';
-	let onlineTurn: 'player1' | 'player2' = 'player1';
 
 	let AITurn = true;
 	if (AITurn) {
@@ -290,8 +282,22 @@
 	<div class="button-container">
 		<button on:click={() => (mode = 'easy')} id="ez">EASY</button>
 		<button on:click={() => (mode = 'hard')} id="hrd">HARD</button>
-		<button on:click={() => (mode = 'multiplayer')} id="mtp">MULTIPLAYER</button>
 		<button
+			on:click={() => {
+				mode = 'multiplayer';
+				board = initBoard();
+			}}
+			id="mtp">MULTIPLAYER</button
+		>
+		<!-- PUT THIS INSIDE DISABLED -->
+		<!-- mode === 'multiplayer' &&
+			 	!(
+			 		isPlayerWin(evaluate(board, player, opponent)) ||
+			 		isAIWin(evaluate(board, player, opponent)) ||
+			 		isDraw(evaluate(board, player, opponent), board)
+			 	) -->
+		<button
+			disabled={false}
 			on:click={() => {
 				let evaluateRes = evaluate(board, player, opponent);
 
@@ -306,6 +312,24 @@
 				let restartRes = restart(AITurn);
 				board = restartRes.board;
 				AITurn = restartRes.AITurn;
+				// delete moves when you restart
+				const updates = {};
+				let playersRef = ref(db, `games/${gameId}/players`);
+				get(playersRef).then((snapshot) => {
+					if (snapshot.exists()) {
+						const data = snapshot.val();
+						const playerKeys = Object.keys(data);
+						// @ts-ignore
+						updates[`/games/${gameId}/players/${playerKeys[0]}/moves`] = null;
+						// @ts-ignore
+						updates[`/games/${gameId}/players/${playerKeys[1]}/moves`] = null;
+
+						update(ref(db), updates).then(() => {
+							// TODO: make update work for both players
+							console.log('updated moves to null');
+						});
+					}
+				});
 			}}
 			id="rs">RESTART</button
 		>
@@ -314,6 +338,14 @@
 </div>
 
 <style>
+	#rs:disabled {
+		cursor: not-allowed;
+	}
+	#rs:disabled:hover {
+		border-color: white;
+		background-color: black;
+		color: white;
+	}
 	button {
 		color: white;
 		background: black;
@@ -340,10 +372,12 @@
 		border-color: red;
 	}
 
+	/* This might be useless */
 	#mtp:hover {
 		border-color: white;
 	}
 
+	/* This might be useless */
 	#rs:hover {
 		border-color: white;
 	}

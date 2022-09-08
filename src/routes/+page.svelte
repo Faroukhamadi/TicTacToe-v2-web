@@ -25,6 +25,7 @@
 		increment
 	} from 'firebase/database';
 
+	// Server side data
 	export let data: PageData;
 	let playerId: string;
 	let gameId: string | null;
@@ -189,6 +190,7 @@
 		return () => console.log('destroyed');
 	});
 
+	// Client side data
 	let board = initBoard();
 
 	let player = 'o';
@@ -386,6 +388,12 @@
 	<Footer />
 </div>
 
+<!-- 
+	.button-container {
+		display: flex;
+		gap: 20px;
+		margin-top: 30px;
+	} -->
 <style>
 	#rs:disabled {
 		cursor: not-allowed;
@@ -499,5 +507,13 @@
 	#col7,
 	#col8 {
 		border-bottom: 0px;
+	}
+
+	@media only screen and (min-width: 320px) and (max-width: 480px) {
+		.button-container {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+			gap: 30px;
+		}
 	}
 </style>

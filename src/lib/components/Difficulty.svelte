@@ -3,27 +3,32 @@
 	export let AIScore: number;
 	export let drawCount: number;
 	export let mode: string;
+	export let player1Score: number;
+	export let player2Score: number;
+	export let tie: number;
 </script>
 
 <!-- TODO: make X or O dependent on player and opponent when I implement multiplayer -->
 <div class="footer-container">
 	<div class="score-container">
 		<p>PLAYER1(X)</p>
-		<p>{playerScore}</p>
+		<p>{mode === 'multiplayer' ? player1Score : playerScore}</p>
 	</div>
 	<div class="score-container">
 		<p>TIE</p>
-		<p>{drawCount}</p>
+		<p>{mode === 'multiplayer' ? tie : drawCount}</p>
 	</div>
 	<div class="score-container">
 		{#if mode === 'easy'}
 			<p>EASY AI(O)</p>
+			<p>{AIScore}</p>
 		{:else if mode === 'hard'}
 			<p>UNBEATABLE AI(O)</p>
+			<p>{AIScore}</p>
 		{:else}
 			<p>PLAYER2(O)</p>
+			<p>{player2Score}</p>
 		{/if}
-		<p>{AIScore}</p>
 	</div>
 </div>
 

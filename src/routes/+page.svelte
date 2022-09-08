@@ -30,6 +30,9 @@
 	let gameId: string | null;
 	let playerRef: DatabaseReference;
 	let gameRef: DatabaseReference;
+	let player1Score: number = 0;
+	let player2Score: number = 0;
+	let tie: number = 0;
 
 	onMount(() => {
 		async function signIn() {
@@ -70,8 +73,7 @@
 							if (!player1Moves && !player2Moves) {
 								board = initBoard();
 							}
-						} else if (data.left === 2) {
-							console.log('data.left2: ', data.left);
+						} else if (data.joined === 2) {
 							let gameRef = ref(db, `games/${gameId}`);
 							remove(gameRef).then(() => {
 								console.log('game removed because there are no players left');
@@ -109,7 +111,12 @@
 								gameRef = ref(db, `games/${gameId}`);
 								set(gameRef, {
 									turn: playerId,
-									left: 0
+									joined: 0,
+									score: {
+										player1: 0,
+										tie: 0,
+										player2: 0
+									}
 								});
 								const allPlayersRef = ref(db, `games/${gameId}/players`);
 
@@ -131,7 +138,12 @@
 						gameRef = ref(db, `games/${gameId}`);
 						set(gameRef, {
 							turn: playerId,
-							left: 0
+							joined: 0,
+							score: {
+								player1: 0,
+								tie: 0,
+								player2: 0
+							}
 						});
 					}
 					// try this here
@@ -144,7 +156,7 @@
 							.remove()
 							.then(() => {
 								const updates: any = {};
-								updates[`games/${gameId}/left`] = increment(1);
+								updates[`games/${gameId}/joined`] = increment(1);
 								update(ref(db), updates).then(() => {
 									console.log('updated');
 								});
@@ -158,7 +170,7 @@
 							.remove()
 							.then(() => {
 								const updates: any = {};
-								updates[`games/${gameId}/left`] = increment(1);
+								updates[`games/${gameId}/joined`] = increment(1);
 								update(ref(db), updates).then(() => {
 									console.log('updated');
 								});
@@ -296,7 +308,7 @@
 			{/each}
 		{/each}
 	</div>
-	<Difficulty {playerScore} {AIScore} {drawCount} {mode} />
+	<Difficulty {playerScore} {AIScore} {drawCount} {mode} {player1Score} {player2Score} {tie} />
 	<div class="button-container">
 		<button on:click={() => (mode = 'easy')} id="ez">EASY</button>
 		<button on:click={() => (mode = 'hard')} id="hrd">HARD</button>
@@ -317,19 +329,40 @@
 			on:click={() => {
 				let evaluateRes = evaluate(board, player, opponent);
 
-				if (isPlayerWin(evaluateRes)) {
-					playerScore++;
-				} else if (isDraw(evaluateRes, board)) {
-					drawCount++;
-				} else if (isAIWin(evaluateRes)) {
-					AIScore++;
+				// delete moves when you restart
+				const updates = {};
+				let gameRef = ref(db, `games/${gameId}`);
+				if (mode === 'multiplayer') {
+					get(gameRef).then((snapshot) => {
+						const data = snapshot.val();
+						if (isPlayerWin(evaluateRes)) {
+							// @ts-ignore
+							updates[`/games/${gameId}/score/player1`] = increment(1);
+							player1Score = data.score.player1 + 1;
+						} else if (isDraw(evaluateRes, board)) {
+							// @ts-ignore
+							updates[`/games/${gameId}/score/tie`] = increment(1);
+							tie = data.score.tie + 1;
+						} else if (isAIWin(evaluateRes)) {
+							// @ts-ignore
+							updates[`/games/${gameId}/score/player2`] = increment(1);
+							player2Score = data.score.player2 + 1;
+						}
+					});
+				} else {
+					if (isPlayerWin(evaluateRes)) {
+						playerScore++;
+					} else if (isDraw(evaluateRes, board)) {
+						drawCount++;
+					} else if (isAIWin(evaluateRes)) {
+						AIScore++;
+					}
 				}
 
 				let restartRes = restart(AITurn);
 				board = restartRes.board;
 				AITurn = restartRes.AITurn;
-				// delete moves when you restart
-				const updates = {};
+
 				let playersRef = ref(db, `games/${gameId}/players`);
 				get(playersRef).then((snapshot) => {
 					if (snapshot.exists()) {

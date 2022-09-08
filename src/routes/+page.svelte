@@ -5,7 +5,7 @@
 	import initBoard from '../lib/utils/initBoard';
 	import restart from '../lib/utils/restart';
 	import Footer from '../lib/components/Footer.svelte';
-	import Difficulty from '../lib/components/Difficulty.svelte';
+	import Difficulty from '../lib/components/Score.svelte';
 	import convertIndexCol from '../lib/utils/convertIndex';
 	import { findBestMove, findRandomMove, Move } from '../lib/utils/findMove';
 	import { isAIWin, isDraw, isPlayerWin } from '../lib/utils/gameResult';
@@ -388,12 +388,6 @@
 	<Footer />
 </div>
 
-<!-- 
-	.button-container {
-		display: flex;
-		gap: 20px;
-		margin-top: 30px;
-	} -->
 <style>
 	#rs:disabled {
 		cursor: not-allowed;
@@ -458,7 +452,6 @@
 	.container {
 		display: flex;
 		flex-direction: column;
-		justify-content: center;
 		align-items: center;
 		gap: 14px;
 		margin: 0;
@@ -512,8 +505,18 @@
 	@media only screen and (min-width: 320px) and (max-width: 480px) {
 		.button-container {
 			display: grid;
-			grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
 			gap: 30px;
+		}
+		button {
+			width: 100px;
+		}
+		.col {
+			width: 120px;
+			height: 120px;
+			border: 2px solid white;
+		}
+		.game-brd {
+			width: 20px;
 		}
 	}
 </style>

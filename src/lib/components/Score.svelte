@@ -55,4 +55,12 @@
 		display: flex;
 		gap: 150px;
 	}
+
+	@media only screen and (min-width: 320px) and (max-width: 480px) {
+		.footer-container {
+			display: flex;
+			flex-direction: column;
+			gap: 20px;
+		}
+	}
 </style>

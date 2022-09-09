@@ -58,6 +58,10 @@
 							player1Name = data.players[playerKeys[0]].name;
 							player2Name = data.players[playerKeys[1]].name;
 
+							player1Score = data.score.player1;
+							player2Score = data.score.player2;
+							tie = data.score.tie;
+
 							if (player1Moves) {
 								// @ts-ignore
 								player1Moves.forEach((move) => {
@@ -349,24 +353,17 @@
 
 				// delete moves when you restart
 				const updates = {};
-				let gameRef = ref(db, `games/${gameId}`);
 				if (mode === 'multiplayer') {
-					get(gameRef).then((snapshot) => {
-						const data = snapshot.val();
-						if (isPlayerWin(evaluateRes)) {
-							// @ts-ignore
-							updates[`/games/${gameId}/score/player1`] = increment(1);
-							player1Score = data.score.player1 + 1;
-						} else if (isDraw(evaluateRes, board)) {
-							// @ts-ignore
-							updates[`/games/${gameId}/score/tie`] = increment(1);
-							tie = data.score.tie + 1;
-						} else if (isAIWin(evaluateRes)) {
-							// @ts-ignore
-							updates[`/games/${gameId}/score/player2`] = increment(1);
-							player2Score = data.score.player2 + 1;
-						}
-					});
+					if (isPlayerWin(evaluateRes)) {
+						// @ts-ignore
+						updates[`/games/${gameId}/score/player1`] = increment(1);
+					} else if (isDraw(evaluateRes, board)) {
+						// @ts-ignore
+						updates[`/games/${gameId}/score/tie`] = increment(1);
+					} else if (isAIWin(evaluateRes)) {
+						// @ts-ignore
+						updates[`/games/${gameId}/score/player2`] = increment(1);
+					}
 				} else {
 					if (isPlayerWin(evaluateRes)) {
 						playerScore++;

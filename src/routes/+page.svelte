@@ -5,7 +5,7 @@
 	import initBoard from '../lib/utils/initBoard';
 	import restart from '../lib/utils/restart';
 	import Footer from '../lib/components/Footer.svelte';
-	import Difficulty from '../lib/components/Score.svelte';
+	import Score from '../lib/components/Score.svelte';
 	import convertIndexCol from '../lib/utils/convertIndex';
 	import { findBestMove, findRandomMove, Move } from '../lib/utils/findMove';
 	import { isAIWin, isDraw, isPlayerWin } from '../lib/utils/gameResult';
@@ -34,6 +34,8 @@
 	let player1Score: number = 0;
 	let player2Score: number = 0;
 	let tie: number = 0;
+	let player1Name: string = 'Waiting...';
+	let player2Name: string = 'Waiting...';
 
 	onMount(() => {
 		async function signIn() {
@@ -52,6 +54,9 @@
 						if (playerKeys.length === 2) {
 							const player1Moves = data.players[playerKeys[0]].moves;
 							const player2Moves = data.players[playerKeys[1]].moves;
+
+							player1Name = data.players[playerKeys[0]].name;
+							player2Name = data.players[playerKeys[1]].name;
 
 							if (player1Moves) {
 								// @ts-ignore
@@ -310,7 +315,18 @@
 			{/each}
 		{/each}
 	</div>
-	<Difficulty {playerScore} {AIScore} {drawCount} {mode} {player1Score} {player2Score} {tie} />
+	<!-- TODO: Find a better way to pass data because this is ugly -->
+	<Score
+		{playerScore}
+		{AIScore}
+		{drawCount}
+		{mode}
+		{player1Score}
+		{player2Score}
+		{tie}
+		{player1Name}
+		{player2Name}
+	/>
 	<div class="button-container">
 		<button on:click={() => (mode = 'easy')} id="ez">EASY</button>
 		<button on:click={() => (mode = 'hard')} id="hrd">HARD</button>
@@ -376,7 +392,6 @@
 						updates[`/games/${gameId}/players/${playerKeys[1]}/moves`] = null;
 
 						update(ref(db), updates).then(() => {
-							// TODO: make update work for both players
 							console.log('updated moves to null');
 						});
 					}
@@ -392,11 +407,13 @@
 	#rs:disabled {
 		cursor: not-allowed;
 	}
+
 	#rs:disabled:hover {
 		border-color: white;
 		background-color: black;
 		color: white;
 	}
+
 	button {
 		color: white;
 		background: black;
@@ -421,16 +438,6 @@
 
 	#hrd:hover {
 		border-color: red;
-	}
-
-	/* This might be useless */
-	#mtp:hover {
-		border-color: white;
-	}
-
-	/* This might be useless */
-	#rs:hover {
-		border-color: white;
 	}
 
 	.button-container {

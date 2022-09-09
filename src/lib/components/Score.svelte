@@ -2,16 +2,21 @@
 	export let playerScore: number;
 	export let AIScore: number;
 	export let drawCount: number;
+
 	export let mode: string;
+
 	export let player1Score: number;
 	export let player2Score: number;
 	export let tie: number;
+
+	export let player1Name: string;
+	export let player2Name: string;
 </script>
 
 <!-- TODO: make X or O dependent on player and opponent when I implement multiplayer -->
 <div class="footer-container">
 	<div class="score-container">
-		<p>PLAYER1(X)</p>
+		<p>{mode === 'multiplayer' ? player1Name : 'PLAYER1(X)'}</p>
 		<p>{mode === 'multiplayer' ? player1Score : playerScore}</p>
 	</div>
 	<div class="score-container">
@@ -26,7 +31,7 @@
 			<p>UNBEATABLE AI(O)</p>
 			<p>{AIScore}</p>
 		{:else}
-			<p>PLAYER2(O)</p>
+			<p>{mode === 'multiplayer' ? player2Name : 'PLAYER2(O)'}</p>
 			<p>{player2Score}</p>
 		{/if}
 	</div>

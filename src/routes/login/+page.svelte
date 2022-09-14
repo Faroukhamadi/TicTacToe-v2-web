@@ -1,6 +1,6 @@
 <h1>Tic-Tac-Toe</h1>
 <form action="/" enctype="multipart/form-data" method="post">
-	<input spellcheck="false" placeholder="Player Name" name="name" />
+	<input spellcheck="false" autocomplete="off" placeholder="Player Name" name="name" />
 	<button>submit</button>
 </form>
 
@@ -42,18 +42,17 @@
 		min-width: 100px;
 		min-height: 45px;
 		border-radius: 7px;
-		border: 1px solid white;
+		border: 1px solid grey;
 		font-size: x-large;
 		font-family: 'Caveat';
 		cursor: pointer;
 		background-color: white;
-		transition: opacity 200ms ease-in-out 150ms;
+		transition: opacity 200ms ease-in-out;
 	}
 	button:hover {
 		opacity: 0.8;
 	}
 	input::placeholder {
 		font-family: 'Caveat';
-		/* color: red; */
 	}
 </style>

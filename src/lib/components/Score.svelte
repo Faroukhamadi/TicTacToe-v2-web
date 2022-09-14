@@ -13,7 +13,6 @@
 	export let player2Name: string;
 </script>
 
-<!-- TODO: make X or O dependent on player and opponent when I implement multiplayer -->
 <div class="footer-container">
 	<div class="score-container">
 		<p>{mode === 'multiplayer' ? player1Name : 'PLAYER1(X)'}</p>
@@ -31,7 +30,7 @@
 			<p>UNBEATABLE AI(O)</p>
 			<p>{AIScore}</p>
 		{:else}
-			<p>{mode === 'multiplayer' ? player2Name : 'PLAYER2(O)'}</p>
+			<p>{player2Name}</p>
 			<p>{player2Score}</p>
 		{/if}
 	</div>

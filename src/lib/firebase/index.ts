@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { getAuth, signInAnonymously } from 'firebase/auth';
 import { getDatabase } from 'firebase/database';
 import type { FirebaseOptions } from 'firebase/app';
 import type { FirebaseApp } from 'firebase/app';
@@ -16,5 +16,11 @@ export const firebaseConfig: FirebaseOptions = {
 };
 
 const app: FirebaseApp = initializeApp(firebaseConfig, 'tic-tac-toe');
+
 export const auth = getAuth(app);
 export const db = getDatabase(app);
+
+export const signIn = async (): Promise<void> => {
+	console.log('sign in getting called');
+	await signInAnonymously(auth);
+};

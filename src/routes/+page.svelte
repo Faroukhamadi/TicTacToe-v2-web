@@ -1,22 +1,21 @@
 <script lang="ts">
 	import type { DatabaseReference } from 'firebase/database';
 	import type { PageData } from './$types';
-	import evaluate from '../lib/utils/evaluate';
-	import initBoard from '../lib/utils/initBoard';
-	import restart from '../lib/utils/restart';
-	import Footer from '../lib/components/Footer.svelte';
-	import Score from '../lib/components/Score.svelte';
+	import evaluate from '$lib/utils/evaluate';
+	import initBoard from '$lib/utils/initBoard';
+	import restart from '$lib/utils/restart';
+	import Footer from '$lib/components/Footer.svelte';
+	import Score from '$lib/components/Score.svelte';
 	import convertIndexCol from '../lib/utils/convertIndex';
 	import { findBestMove, findRandomMove, Move } from '../lib/utils/findMove';
 	import { isAIWin, isDraw, isPlayerWin } from '../lib/utils/gameResult';
 	import { onMount } from 'svelte';
-	import { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
-	import { auth, db } from '../lib/firebase/index';
+	import { onAuthStateChanged } from 'firebase/auth';
+	import { signIn, auth, db } from '$lib/firebase/index';
 	import {
 		onDisconnect,
 		ref,
 		onValue,
-		onChildAdded,
 		push,
 		get,
 		set,
@@ -24,6 +23,8 @@
 		remove,
 		increment
 	} from 'firebase/database';
+
+	type Mode = 'easy' | 'hard' | 'multiplayer';
 
 	// Server side data
 	export let data: PageData;
@@ -37,167 +38,7 @@
 	let player1Name: string = 'Waiting...';
 	let player2Name: string = 'Waiting...';
 
-	onMount(() => {
-		async function signIn() {
-			await signInAnonymously(auth);
-		}
-
-		const updateMultiplayerBoard = () => {
-			const allGamesRef = ref(db, 'games');
-			onValue(allGamesRef, (snapshot) => {
-				if (gameId) {
-					const data = snapshot.val()[gameId];
-
-					if (data.players) {
-						let playerKeys = Object.keys(data.players);
-
-						if (playerKeys.length === 2) {
-							const player1Moves = data.players[playerKeys[0]].moves;
-							const player2Moves = data.players[playerKeys[1]].moves;
-
-							player1Name = data.players[playerKeys[0]].name;
-							player2Name = data.players[playerKeys[1]].name;
-
-							player1Score = data.score.player1;
-							player2Score = data.score.player2;
-							tie = data.score.tie;
-
-							if (player1Moves) {
-								// @ts-ignore
-								player1Moves.forEach((move) => {
-									if (board[move.i][move.j] === '_') {
-										board[move.i][move.j] = '+';
-									}
-								});
-							}
-
-							if (player2Moves) {
-								// @ts-ignore
-								player2Moves.forEach((move) => {
-									if (board[move.i][move.j] === '_') {
-										board[move.i][move.j] = 'o';
-									}
-								});
-							}
-
-							if (!player1Moves && !player2Moves) {
-								board = initBoard();
-							}
-						} else if (data.joined === 2) {
-							let gameRef = ref(db, `games/${gameId}`);
-							remove(gameRef).then(() => {
-								console.log('game removed because there are no players left');
-							});
-						}
-					}
-				}
-			});
-		};
-
-		onAuthStateChanged(auth, (user) => {
-			if (user) {
-				playerId = user.uid;
-				let state = -1;
-				const allGamesRef = ref(db, 'games');
-				get(allGamesRef).then((snapshot) => {
-					if (snapshot.val()) {
-						Object.keys(snapshot.val()).forEach((key) => {
-							if (
-								snapshot.val()[key].players &&
-								Object.keys(snapshot.val()[key].players).length === 1
-							) {
-								// GET GAMEID AND ADD SECOND PLAYER
-								console.log('------------------1------------------');
-								state = 1;
-								playerRef = ref(db, `games/${key}/players`);
-								gameRef = ref(db, `games/${key}`);
-								gameId = key;
-							} else {
-								// CREATE NEW GAME AND ADD FIRST PLAYER
-								console.log('------------------2------------------');
-								state = 2;
-								gameId = push(allGamesRef).key;
-								playerRef = ref(db, `games/${gameId}/players`);
-								gameRef = ref(db, `games/${gameId}`);
-								set(gameRef, {
-									turn: playerId,
-									joined: 0,
-									score: {
-										player1: 0,
-										tie: 0,
-										player2: 0
-									}
-								});
-								const allPlayersRef = ref(db, `games/${gameId}/players`);
-
-								onChildAdded(allPlayersRef, (snapshot) => {
-									if (snapshot.val().id === playerId) {
-										// console.log('this is me: ', snapshot.val());
-									} else {
-										// console.log('this is not me: ', snapshot.val());
-									}
-								});
-							}
-						});
-					} else {
-						// NO GAME HAS EVER BEEN CREATED
-						console.log('------------------3------------------');
-						state = 3;
-						gameId = push(allGamesRef).key;
-						playerRef = ref(db, `games/${gameId}/players/${playerId}`);
-						gameRef = ref(db, `games/${gameId}`);
-						set(gameRef, {
-							turn: playerId,
-							joined: 0,
-							score: {
-								player1: 0,
-								tie: 0,
-								player2: 0
-							}
-						});
-					}
-					// try this here
-					if (state === 1) {
-						push(playerRef, {
-							id: playerId,
-							name: data.name
-						});
-						onDisconnect(playerRef)
-							.remove()
-							.then(() => {
-								const updates: any = {};
-								updates[`games/${gameId}/joined`] = increment(1);
-								update(ref(db), updates).then(() => {
-									console.log('updated');
-								});
-							});
-					} else if (state === 2 || state === 3) {
-						set(playerRef, {
-							id: playerId,
-							name: data.name
-						});
-						onDisconnect(playerRef)
-							.remove()
-							.then(() => {
-								const updates: any = {};
-								updates[`games/${gameId}/joined`] = increment(1);
-								update(ref(db), updates).then(() => {
-									console.log('updated');
-								});
-							});
-					}
-				});
-				// You're logged in
-			} else {
-				// You're logged out
-			}
-		});
-
-		signIn();
-		updateMultiplayerBoard();
-
-		return () => console.log('destroyed');
-	});
+	onMount(() => {});
 
 	// Client side data
 	let board = initBoard();
@@ -208,18 +49,14 @@
 	let playerScore = 0;
 	let AIScore = 0;
 	let drawCount = 0;
-	let mode = 'easy';
+	let mode: Mode = 'easy';
 
 	let AITurn = true;
+
 	if (AITurn) {
 		let bestMove: Move;
-		if (mode === 'hard') {
-			bestMove = findBestMove(board, player, opponent);
-			board[bestMove.row][bestMove.col] = player;
-		} else if (mode === 'easy') {
-			bestMove = findRandomMove(board);
-			board[bestMove.row][bestMove.col] = player;
-		}
+		bestMove = findRandomMove(board);
+		board[bestMove.row][bestMove.col] = player;
 	}
 </script>
 
@@ -319,7 +156,6 @@
 			{/each}
 		{/each}
 	</div>
-	<!-- TODO: Find a better way to pass data because this is ugly -->
 	<Score
 		{playerScore}
 		{AIScore}
@@ -337,6 +173,149 @@
 		<button
 			on:click={() => {
 				mode = 'multiplayer';
+				signIn();
+				const updateMultiplayerBoard = () => {
+					const allGamesRef = ref(db, 'games');
+					onValue(allGamesRef, (snapshot) => {
+						if (gameId) {
+							const data = snapshot.val()[gameId];
+
+							if (data.players) {
+								let playerKeys = Object.keys(data.players);
+
+								if (playerKeys.length === 2) {
+									const player1Moves = data.players[playerKeys[0]].moves;
+									const player2Moves = data.players[playerKeys[1]].moves;
+
+									player1Name = data.players[playerKeys[0]].name;
+									player2Name = data.players[playerKeys[1]].name;
+
+									player1Score = data.score.player1;
+									player2Score = data.score.player2;
+									tie = data.score.tie;
+
+									if (player1Moves) {
+										// @ts-ignore
+										player1Moves.forEach((move) => {
+											if (board[move.i][move.j] === '_') {
+												board[move.i][move.j] = '+';
+											}
+										});
+									}
+
+									if (player2Moves) {
+										// @ts-ignore
+										player2Moves.forEach((move) => {
+											if (board[move.i][move.j] === '_') {
+												board[move.i][move.j] = 'o';
+											}
+										});
+									}
+
+									if (!player1Moves && !player2Moves) {
+										board = initBoard();
+									}
+								} else if (data.joined === 2) {
+									let gameRef = ref(db, `games/${gameId}`);
+									remove(gameRef).then(() => {
+										console.log('game removed because there are no players left');
+									});
+								}
+							}
+						}
+					});
+				};
+
+				onAuthStateChanged(auth, (user) => {
+					if (user) {
+						playerId = user.uid;
+						let state = -1;
+						const allGamesRef = ref(db, 'games');
+						get(allGamesRef).then((snapshot) => {
+							if (snapshot.val()) {
+								Object.keys(snapshot.val()).forEach((key) => {
+									if (
+										snapshot.val()[key].players &&
+										Object.keys(snapshot.val()[key].players).length === 1
+									) {
+										// GET GAMEID AND ADD SECOND PLAYER
+										state = 1;
+										playerRef = ref(db, `games/${key}/players`);
+										gameRef = ref(db, `games/${key}`);
+										gameId = key;
+									} else {
+										// CREATE NEW GAME AND ADD FIRST PLAYER
+										state = 2;
+										gameId = push(allGamesRef).key;
+										playerRef = ref(db, `games/${gameId}/players`);
+										gameRef = ref(db, `games/${gameId}`);
+										set(gameRef, {
+											turn: playerId,
+											joined: 0,
+											score: {
+												player1: 0,
+												tie: 0,
+												player2: 0
+											}
+										});
+									}
+								});
+							} else {
+								// NO GAME HAS EVER BEEN CREATED
+								state = 3;
+								gameId = push(allGamesRef).key;
+								playerRef = ref(db, `games/${gameId}/players/${playerId}`);
+								gameRef = ref(db, `games/${gameId}`);
+								set(gameRef, {
+									turn: playerId,
+									joined: 0,
+									score: {
+										player1: 0,
+										tie: 0,
+										player2: 0
+									}
+								});
+							}
+							if (state === 1) {
+								push(playerRef, {
+									id: playerId,
+									name: data.name
+								});
+								onDisconnect(playerRef)
+									.remove()
+									.then(() => {
+										const updates = {};
+										// @ts-ignore
+										updates[`games/${gameId}/joined`] = increment(1);
+										update(ref(db), updates).then(() => {
+											console.log('updated');
+										});
+									});
+							} else if (state === 2 || state === 3) {
+								set(playerRef, {
+									id: playerId,
+									name: data.name
+								});
+								onDisconnect(playerRef)
+									.remove()
+									.then(() => {
+										const updates = {};
+										// @ts-ignore
+										updates[`games/${gameId}/joined`] = increment(1);
+										update(ref(db), updates).then(() => {
+											console.log('updated');
+										});
+									});
+							}
+						});
+						// You're logged in
+					} else {
+						// You're logged out
+					}
+				});
+
+				updateMultiplayerBoard();
+
 				board = initBoard();
 			}}
 			id="mtp">MULTIPLAYER</button
